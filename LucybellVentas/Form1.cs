@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using LucybellVentas.Modelos;
+using System.Data;
+using System.Data.SqlClient;
 
 namespace LucybellVentas
 {
@@ -14,102 +16,39 @@ namespace LucybellVentas
         public Form1()
         {
             InitializeComponent();
-            productos.Add(new Producto { Nombre = "Pulsera Plata", Stock = 10, PrecioUnitario = 50.00m });
-            productos.Add(new Producto { Nombre = "Collar Oro", Stock = 5, PrecioUnitario = 100.00m });
-
-            // Configurar autocompletado
-            txtNombreProducto.AutoCompleteMode = AutoCompleteMode.Suggest;
-            txtNombreProducto.AutoCompleteSource = AutoCompleteSource.CustomSource;
-
-            // Crear una lista de nombres de productos para el autocompletado
-            var nombresProductos = productos.Select(p => p.Nombre).ToArray();
-            txtNombreProducto.AutoCompleteCustomSource.AddRange(nombresProductos);
         }
+
+        #region Botones
 
         private void btnRegistrarVenta_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(txtNombreProducto.Text))
-            {
-                MessageBox.Show("Por favor, ingrese el nombre del producto.");
-                return;
-            }
-
-            if (nudCantidad.Value <= 0)
-            {
-                MessageBox.Show("La cantidad vendida debe ser mayor que 0.");
-                return;
-            }
-
-            string nombreProducto = txtNombreProducto.Text;
-            int cantidadVendida = (int)nudCantidad.Value;
-
-            Producto producto = productos.FirstOrDefault(p => p.Nombre == nombreProducto);
-            if (producto != null && producto.Stock >= cantidadVendida)
-            {
-                producto.Stock -= cantidadVendida;
-                decimal totalVenta = cantidadVendida * producto.PrecioUnitario;
-
-                Venta venta = new Venta()
-                {
-                    FechaHora = DateTime.Now,
-                    NombreProducto = producto.Nombre,
-                    CantidadVendida = cantidadVendida,
-                    TotalVenta = totalVenta
-                };
-
-                ventas.Add(venta);
-                ActualizarResumenVentas();
-                ActualizarStockDisponible();
-            }
-            else
-            {
-                MessageBox.Show("Producto no encontrado o stock insuficiente.");
-            }
+            DatabaseHelper db = new DatabaseHelper();
+            db.RegistrarVenta(txtNombreProducto.Text, Convert.ToInt32(nudCantidad.Text));
         }
+
+        private void btnAgregar_Click(object sender, EventArgs e)
+        {
+            DatabaseHelper db = new DatabaseHelper();
+            db.AgregarProducto(txtNombre2.Text, Convert.ToDecimal(txtPrecio.Text), Convert.ToInt32(txtStock.Text));
+        }
+
+        #endregion
+
+        #region Metodos
 
         private void ActualizarResumenVentas()
         {
-            dgvResumenVentas.DataSource = null;
-            dgvResumenVentas.DataSource = ventas;
-
-            DateTime hoy = DateTime.Today;
-            decimal totalGanadoDiario = ventas
-                .Where(v => v.FechaHora.Date == hoy)
-                .Sum(v => v.TotalVenta);
-
-            lblTotalGanado.Text = $"Total Ganado Hoy: {totalGanadoDiario:C}";
+            
         }
 
         private void ActualizarStockDisponible()
         {
-            var producto = productos.FirstOrDefault(p => p.Nombre == txtNombreProducto.Text);
-            if (producto != null)
-            {
-                lblStockDisponible.Text = $"Stock disponible: {producto.Stock}";
-                lblPrecioUnitario.Text = $"Precio unitario: {producto.PrecioUnitario:C}";
-            }
-            else
-            {
-                lblStockDisponible.Text = "Stock disponible: 0";
-                lblPrecioUnitario.Text = "Precio unitario: $0.00";
-            }
+            
         }
 
         private void CalcularTotalVenta()
         {
-            string nombreProducto = txtNombreProducto.Text;
-            int cantidadVendida = (int)nudCantidad.Value;
-
-            Producto producto = productos.FirstOrDefault(p => p.Nombre == nombreProducto);
-            if (producto != null)
-            {
-                decimal totalVenta = cantidadVendida * producto.PrecioUnitario;
-                lblTotalVenta.Text = $"Total Venta: {totalVenta:C}";
-            }
-            else
-            {
-                lblTotalVenta.Text = "Total Venta: $0.00";
-            }
+           
         }
 
         private void nudCantidad_ValueChanged(object sender, EventArgs e)
@@ -122,5 +61,112 @@ namespace LucybellVentas
             ActualizarStockDisponible();
             CalcularTotalVenta();
         }
+
+        #endregion
+
+        #region SQL Conexion y Funciones
+        public class DatabaseHelper
+        {
+            public string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
+
+            public void AgregarProducto(string nombre, decimal precio, int stock)
+            {
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    string query = "INSERT INTO Productos (nombre, precio, stock) VALUES (@nombre, @precio, @stock)";
+
+                    SqlCommand cmd = new SqlCommand(query, con);
+                    cmd.Parameters.AddWithValue("@nombre", nombre);
+                    cmd.Parameters.AddWithValue("@precio", precio);
+                    cmd.Parameters.AddWithValue("@stock", stock);
+
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                    con.Close();
+
+                    MessageBox.Show("Producto agregado correctamente.");
+                }
+            }
+
+            public void RegistrarVenta(string nombreProducto, int cantidad)
+            {
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    con.Open();
+                    SqlTransaction transaction = con.BeginTransaction();
+
+                    try
+                    {
+                        // Buscar el id_producto con el nombre del producto
+                        string queryProducto = "SELECT id_producto, stock FROM Productos WHERE nombre = @nombreProducto";
+                        SqlCommand cmdProducto = new SqlCommand(queryProducto, con, transaction);
+                        cmdProducto.Parameters.AddWithValue("@nombreProducto", nombreProducto);
+
+                        int idProducto = 0;
+                        int stockDisponible = 0;
+
+                        using (SqlDataReader reader = cmdProducto.ExecuteReader())
+                        {
+                            if (!reader.Read())
+                            {
+                                MessageBox.Show("Producto no encontrado.");
+                                return;
+                            }
+
+                            idProducto = reader.GetInt32(0);
+                            stockDisponible = reader.GetInt32(1);
+                        } // **Aquí se cierra automáticamente el DataReader**
+
+                        // Verificar si hay suficiente stock
+                        if (stockDisponible < cantidad)
+                        {
+                            MessageBox.Show("No hay suficiente stock para realizar la venta.");
+                            return;
+                        }
+
+                        // Crear la venta
+                        string queryVenta = "INSERT INTO Ventas DEFAULT VALUES; SELECT SCOPE_IDENTITY();";
+                        SqlCommand cmdVenta = new SqlCommand(queryVenta, con, transaction);
+                        int idVenta = Convert.ToInt32(cmdVenta.ExecuteScalar());
+
+                        // Obtener el precio del producto
+                        string queryPrecio = "SELECT precio FROM Productos WHERE id_producto = @idProducto";
+                        SqlCommand cmdPrecio = new SqlCommand(queryPrecio, con, transaction);
+                        cmdPrecio.Parameters.AddWithValue("@idProducto", idProducto);
+                        decimal precio = Convert.ToDecimal(cmdPrecio.ExecuteScalar());
+
+                        // Insertar detalle de la venta
+                        string queryDetalle = "INSERT INTO DetallesVenta (id_venta, id_producto, cantidad, precio_unitario, total) VALUES (@idVenta, @idProducto, @cantidad, @precioUnitario, @total)";
+                        SqlCommand cmdDetalle = new SqlCommand(queryDetalle, con, transaction);
+                        cmdDetalle.Parameters.AddWithValue("@idVenta", idVenta);
+                        cmdDetalle.Parameters.AddWithValue("@idProducto", idProducto);
+                        cmdDetalle.Parameters.AddWithValue("@cantidad", cantidad);
+                        cmdDetalle.Parameters.AddWithValue("@precioUnitario", precio);
+                        cmdDetalle.Parameters.AddWithValue("@total", cantidad * precio);
+                        cmdDetalle.ExecuteNonQuery();
+
+                        // Reducir stock
+                        string queryStock = "UPDATE Productos SET stock = stock - @cantidad WHERE id_producto = @idProducto";
+                        SqlCommand cmdStock = new SqlCommand(queryStock, con, transaction);
+                        cmdStock.Parameters.AddWithValue("@cantidad", cantidad);
+                        cmdStock.Parameters.AddWithValue("@idProducto", idProducto);
+                        cmdStock.ExecuteNonQuery();
+
+                        // Confirmar transacción
+                        transaction.Commit();
+                        MessageBox.Show("Venta registrada correctamente.");
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        MessageBox.Show("Error al registrar la venta: " + ex.Message);
+                    }
+                }
+            }
+
+        }
+        #endregion
+
+      
     }
 }
