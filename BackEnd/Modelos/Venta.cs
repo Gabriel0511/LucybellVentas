@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LucybellVentas.Modelos
+namespace BackEnd.Modelos
 {
     public class Venta
     {

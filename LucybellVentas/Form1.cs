@@ -2,21 +2,43 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using LucybellVentas.Modelos;
 using System.Data;
 using System.Data.SqlClient;
+using BackEnd.Modelos;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Collections;
 
-namespace LucybellVentas
+
+namespace FrontEnd
 {
     public partial class Form1 : Form
     {
         private List<Producto> productos = new List<Producto>();
         private List<Venta> ventas = new List<Venta>();
 
+        SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;");
+        SqlDataAdapter adapt;
+
         public Form1()
         {
             InitializeComponent();
+            VerVentas();
         }
+
+        #region TextBox
+
+        private void nudCantidad_ValueChanged(object sender, EventArgs e)
+        {
+            CalcularSubtotal();
+        }
+
+        private void txtNombreProducto_TextChanged(object sender, EventArgs e)
+        {
+            ActualizarInfoProducto();
+            CargarAutocompletado();
+        }
+
+        #endregion
 
         #region Botones
 
@@ -24,6 +46,7 @@ namespace LucybellVentas
         {
             DatabaseHelper db = new DatabaseHelper();
             db.RegistrarVenta(txtNombreProducto.Text, Convert.ToInt32(nudCantidad.Text));
+            VerVentas();
         }
 
         private void btnAgregar_Click(object sender, EventArgs e)
@@ -32,35 +55,131 @@ namespace LucybellVentas
             db.AgregarProducto(txtNombre2.Text, Convert.ToDecimal(txtPrecio.Text), Convert.ToInt32(txtStock.Text));
         }
 
+
+
         #endregion
 
         #region Metodos
 
-        private void ActualizarResumenVentas()
+        private void VerVentas()
         {
-            
+            try
+            {
+                using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
+                {
+                    con.Open();
+                    DataTable dt = new DataTable();
+                    using (SqlDataAdapter adapt = new SqlDataAdapter(
+                        "SELECT p.nombre AS 'Producto', p.precio AS 'Precio Unitario', " +
+                        "dv.cantidad AS 'Cantidad', dv.total AS 'Total Venta' " +
+                        "FROM Productos p " +
+                        "JOIN DetallesVenta dv ON p.id_producto = dv.id_producto " +
+                        "JOIN Ventas v ON dv.id_venta = v.id_venta " +
+                        "WHERE CAST(v.fecha AS DATE) = CAST(GETDATE() AS DATE);", con))
+                    {
+                        adapt.Fill(dt);
+                    }
+                    dgvResumenVentas.DataSource = dt;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar las ventas: " + ex.Message);
+            }
         }
 
-        private void ActualizarStockDisponible()
+
+        private void ActualizarInfoProducto()
         {
-            
+            con.Open();
+            string query = "SELECT nombre, precio, stock FROM productos WHERE nombre LIKE @nombre";
+
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                cmd.Parameters.AddWithValue("@nombre", txtNombreProducto.Text);
+
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    int totalStock = 0;
+                    decimal totalPrecio = 0;
+
+                    while (reader.Read())
+                    {
+                        string nombre = reader["nombre"].ToString();
+                        decimal precio = Convert.ToDecimal(reader["precio"]);
+                        int stock = Convert.ToInt32(reader["stock"]);
+
+                        totalStock += stock;
+                        totalPrecio += precio;
+                    }
+                    lblStockDisponible.Text = "Stock : " + totalStock.ToString();
+                    lblPrecioUnitario.Text = "Precio : " + totalPrecio.ToString();
+
+
+                    if (lblStockDisponible.Text != "Stock : 0")
+                    {
+                        nudCantidad.Value = 1;
+                        nudCantidad.Enabled = true;
+
+                    }
+                    else
+                    {
+                        nudCantidad.Value = 0;
+                        nudCantidad.Enabled = false;
+                    }
+
+                }
+            }
+            con.Close();
+
         }
 
-        private void CalcularTotalVenta()
+        private void CargarAutocompletado()
         {
-           
+            AutoCompleteStringCollection nombresProductos = new AutoCompleteStringCollection();
+            con.Open();
+            string query = "SELECT nombre FROM productos";
+
+            using (SqlCommand cmd = new SqlCommand(query, con))
+            {
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+
+                    while (reader.Read())
+                    {
+                        nombresProductos.Add(reader["nombre"].ToString());
+                    }
+                }
+            }
+
+            txtNombreProducto.AutoCompleteCustomSource = nombresProductos;
+            con.Close();
         }
 
-        private void nudCantidad_ValueChanged(object sender, EventArgs e)
+        private void CalcularSubtotal()
         {
-            CalcularTotalVenta();
+
+            if (string.IsNullOrWhiteSpace(lblPrecioUnitario.Text))
+            {
+                MessageBox.Show("El precio unitario no está disponible.");
+                return;
+            }
+
+            decimal precioUnitario = 0;
+
+            // Intentar convertir el texto del Label a decimal
+            if (!decimal.TryParse(lblPrecioUnitario.Text.Replace("Precio : ", ""), out precioUnitario))
+            {
+                MessageBox.Show("Error: Precio unitario no válido.");
+                return;
+            }
+
+            decimal cantidad = nudCantidad.Value; // Ya es decimal, no necesita conversión
+            decimal subtotal = precioUnitario * cantidad;
+
+            lblSubtotal.Text = "Subtotal : " + subtotal.ToString("0.00"); // Mostrar con formato adecuado
         }
 
-        private void txtNombreProducto_TextChanged(object sender, EventArgs e)
-        {
-            ActualizarStockDisponible();
-            CalcularTotalVenta();
-        }
 
         #endregion
 
@@ -165,8 +284,9 @@ namespace LucybellVentas
             }
 
         }
+
         #endregion
 
-      
+
     }
 }
