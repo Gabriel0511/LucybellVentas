@@ -38,9 +38,6 @@
             this.lblTotal = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
             this.btnAgregar = new System.Windows.Forms.Button();
-            this.txtPrecio = new System.Windows.Forms.TextBox();
-            this.txtStock = new System.Windows.Forms.TextBox();
-            this.txtNombre2 = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.nudCantidad)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResumenVentas)).BeginInit();
             this.SuspendLayout();
@@ -148,39 +145,15 @@
             this.btnAgregar.Name = "btnAgregar";
             this.btnAgregar.Size = new System.Drawing.Size(92, 21);
             this.btnAgregar.TabIndex = 9;
-            this.btnAgregar.Text = "button1";
+            this.btnAgregar.Text = "Agregar Producto";
             this.btnAgregar.UseVisualStyleBackColor = true;
             this.btnAgregar.Click += new System.EventHandler(this.btnAgregar_Click);
-            // 
-            // txtPrecio
-            // 
-            this.txtPrecio.Location = new System.Drawing.Point(220, 92);
-            this.txtPrecio.Name = "txtPrecio";
-            this.txtPrecio.Size = new System.Drawing.Size(100, 20);
-            this.txtPrecio.TabIndex = 10;
-            // 
-            // txtStock
-            // 
-            this.txtStock.Location = new System.Drawing.Point(326, 92);
-            this.txtStock.Name = "txtStock";
-            this.txtStock.Size = new System.Drawing.Size(100, 20);
-            this.txtStock.TabIndex = 11;
-            // 
-            // txtNombre2
-            // 
-            this.txtNombre2.Location = new System.Drawing.Point(114, 92);
-            this.txtNombre2.Name = "txtNombre2";
-            this.txtNombre2.Size = new System.Drawing.Size(100, 20);
-            this.txtNombre2.TabIndex = 12;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(533, 292);
-            this.Controls.Add(this.txtNombre2);
-            this.Controls.Add(this.txtStock);
-            this.Controls.Add(this.txtPrecio);
             this.Controls.Add(this.btnAgregar);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.lblTotal);
@@ -213,9 +186,6 @@
         private System.Windows.Forms.Label lblTotal;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnAgregar;
-        private System.Windows.Forms.TextBox txtPrecio;
-        private System.Windows.Forms.TextBox txtStock;
-        private System.Windows.Forms.TextBox txtNombre2;
     }
 }
 

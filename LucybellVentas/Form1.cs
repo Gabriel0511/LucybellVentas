@@ -7,6 +7,7 @@ using System.Data.SqlClient;
 using BackEnd.Modelos;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Collections;
+using LucybellVentas;
 
 
 namespace FrontEnd
@@ -51,8 +52,8 @@ namespace FrontEnd
 
         private void btnAgregar_Click(object sender, EventArgs e)
         {
-            DatabaseHelper db = new DatabaseHelper();
-            db.AgregarProducto(txtNombre2.Text, Convert.ToDecimal(txtPrecio.Text), Convert.ToInt32(txtStock.Text));
+            FormAgregarProducto formAgregar = new FormAgregarProducto();
+            formAgregar.ShowDialog();
         }
 
 
