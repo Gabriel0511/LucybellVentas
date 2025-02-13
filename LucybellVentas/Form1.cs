@@ -48,6 +48,9 @@ namespace FrontEnd
             DatabaseHelper db = new DatabaseHelper();
             db.RegistrarVenta(txtNombreProducto.Text, Convert.ToInt32(nudCantidad.Text));
             VerVentas();
+
+            //limpiar textbox
+            txtNombreProducto.Clear();
         }
 
         private void btnAgregar_Click(object sender, EventArgs e)
@@ -238,9 +241,14 @@ namespace FrontEnd
                         } // **Aquí se cierra automáticamente el DataReader**
 
                         // Verificar si hay suficiente stock
+                        if (stockDisponible == 0)
+                        {
+                            MessageBox.Show("Error: No hay stock disponible para este producto.", "Stock agotado", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
                         if (stockDisponible < cantidad)
                         {
-                            MessageBox.Show("No hay suficiente stock para realizar la venta.");
+                            MessageBox.Show($"Error: Stock insuficiente. Solo hay {stockDisponible} unidades disponibles.", "Stock insuficiente", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
                         }
 
