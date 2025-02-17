@@ -41,7 +41,6 @@
             this.txtNombre.Name = "txtNombre";
             this.txtNombre.Size = new System.Drawing.Size(314, 20);
             this.txtNombre.TabIndex = 0;
-            this.txtNombre.Text = "Nombre...";
             // 
             // txtPrecio
             // 
@@ -49,7 +48,6 @@
             this.txtPrecio.Name = "txtPrecio";
             this.txtPrecio.Size = new System.Drawing.Size(314, 20);
             this.txtPrecio.TabIndex = 1;
-            this.txtPrecio.Text = "Precio...";
             // 
             // label1
             // 
@@ -77,7 +75,6 @@
             this.txtStock.Name = "txtStock";
             this.txtStock.Size = new System.Drawing.Size(314, 20);
             this.txtStock.TabIndex = 6;
-            this.txtStock.Text = "Stock...";
             // 
             // FormAgregarProducto
             // 
