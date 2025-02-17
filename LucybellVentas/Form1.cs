@@ -395,8 +395,6 @@ namespace FrontEnd
         private void btnEditarVenta_Click(object sender, EventArgs e)
         {
           
-            FormEditarVenta formEditar = new FormEditarVenta();
-            formEditar.ShowDialog();
         }
     }
 }
