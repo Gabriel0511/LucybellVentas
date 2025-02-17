@@ -98,7 +98,7 @@ namespace FrontEnd
                         total += Convert.ToDecimal(row["Total Venta"]);
                     }
 
-                    lblTotal.Text = "Total Venta: $" + total.ToString("0.00");
+                    lblTotal.Text = "Total: $" + total.ToString("0.00");
                 }
             }
             catch (Exception ex)
