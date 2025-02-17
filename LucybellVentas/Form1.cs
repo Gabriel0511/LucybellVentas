@@ -61,7 +61,10 @@ namespace FrontEnd
             formAgregar.ShowDialog();
         }
 
-
+        private void btnGenerarReporte_Click(object sender, EventArgs e)
+        {
+            GenerarReporteVentasDelDia();
+        }
 
         #endregion
 
@@ -93,7 +96,6 @@ namespace FrontEnd
                 MessageBox.Show("Error al cargar las ventas: " + ex.Message);
             }
         }
-
 
         private void ActualizarInfoProducto()
         {
@@ -374,12 +376,6 @@ namespace FrontEnd
 
 
         #endregion
-
-        private void btnGenerarReporte_Click(object sender, EventArgs e)
-        {
-            GenerarReporteVentasDelDia();
-        }
-
         
     }
 }
