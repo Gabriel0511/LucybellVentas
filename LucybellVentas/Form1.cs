@@ -49,6 +49,7 @@ namespace FrontEnd
         {
             DatabaseHelper db = new DatabaseHelper();
             db.RegistrarVenta(txtNombreProducto.Text, Convert.ToInt32(nudCantidad.Text));
+
             VerVentas();
 
             //limpiar textbox
@@ -89,6 +90,15 @@ namespace FrontEnd
                         adapt.Fill(dt);
                     }
                     dgvResumenVentas.DataSource = dt;
+
+                    //Calcular total 
+                    decimal total = 0;
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        total += Convert.ToDecimal(row["Total Venta"]);
+                    }
+
+                    lblTotal.Text = "Total Venta: $" + total.ToString("0.00");
                 }
             }
             catch (Exception ex)

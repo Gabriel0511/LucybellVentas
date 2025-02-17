@@ -24,6 +24,8 @@ namespace LucybellVentas
             SendMessage(txtNombre.Handle, EM_SETCUEBANNER, 0, "Ingrese el nombre del producto");
             SendMessage(txtPrecio.Handle, EM_SETCUEBANNER, 0, "Ingrese el precio del producto");
             SendMessage(txtStock.Handle, EM_SETCUEBANNER, 0, "Ingrese el stock del producto");
+
+            this.Shown += (s, e) => btnGuardar.Focus();
         }
 
         private void btnGuardar_Click(object sender, EventArgs e)
