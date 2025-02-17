@@ -110,10 +110,16 @@
             // 
             // dgvResumenVentas
             // 
+            this.dgvResumenVentas.AllowUserToAddRows = false;
+            this.dgvResumenVentas.AllowUserToDeleteRows = false;
+            this.dgvResumenVentas.AllowUserToResizeColumns = false;
+            this.dgvResumenVentas.AllowUserToResizeRows = false;
             dataGridViewCellStyle1.BackColor = System.Drawing.Color.OldLace;
             dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F);
             dataGridViewCellStyle1.ForeColor = System.Drawing.Color.Black;
             this.dgvResumenVentas.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
+            this.dgvResumenVentas.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
+            this.dgvResumenVentas.AutoSizeRowsMode = System.Windows.Forms.DataGridViewAutoSizeRowsMode.AllCells;
             this.dgvResumenVentas.BackgroundColor = System.Drawing.SystemColors.Control;
             this.dgvResumenVentas.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.dgvResumenVentas.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
@@ -141,6 +147,7 @@
             this.dgvResumenVentas.Location = new System.Drawing.Point(8, 114);
             this.dgvResumenVentas.Margin = new System.Windows.Forms.Padding(2);
             this.dgvResumenVentas.Name = "dgvResumenVentas";
+            this.dgvResumenVentas.ReadOnly = true;
             this.dgvResumenVentas.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.dgvResumenVentas.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
             dataGridViewCellStyle4.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
