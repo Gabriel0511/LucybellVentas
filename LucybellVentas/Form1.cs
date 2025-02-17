@@ -386,6 +386,15 @@ namespace FrontEnd
 
 
         #endregion
-        
+
+        private void btnAgregarStock_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnEditar_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

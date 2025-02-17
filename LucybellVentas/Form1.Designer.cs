@@ -43,6 +43,9 @@
             this.label1 = new System.Windows.Forms.Label();
             this.btnAgregar = new System.Windows.Forms.Button();
             this.btnGenerarReporte = new System.Windows.Forms.Button();
+            this.btnAgregarStock = new System.Windows.Forms.Button();
+            this.btnEditar = new System.Windows.Forms.Button();
+            this.btnEditProducto = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.nudCantidad)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResumenVentas)).BeginInit();
             this.SuspendLayout();
@@ -188,10 +191,10 @@
             // 
             // btnAgregar
             // 
-            this.btnAgregar.Location = new System.Drawing.Point(419, 90);
+            this.btnAgregar.Location = new System.Drawing.Point(418, 90);
             this.btnAgregar.Margin = new System.Windows.Forms.Padding(2);
             this.btnAgregar.Name = "btnAgregar";
-            this.btnAgregar.Size = new System.Drawing.Size(103, 21);
+            this.btnAgregar.Size = new System.Drawing.Size(104, 21);
             this.btnAgregar.TabIndex = 9;
             this.btnAgregar.Text = "Agregar Producto";
             this.btnAgregar.UseVisualStyleBackColor = true;
@@ -207,12 +210,44 @@
             this.btnGenerarReporte.UseVisualStyleBackColor = true;
             this.btnGenerarReporte.Click += new System.EventHandler(this.btnGenerarReporte_Click);
             // 
+            // btnAgregarStock
+            // 
+            this.btnAgregarStock.Location = new System.Drawing.Point(80, 51);
+            this.btnAgregarStock.Name = "btnAgregarStock";
+            this.btnAgregarStock.Size = new System.Drawing.Size(88, 23);
+            this.btnAgregarStock.TabIndex = 11;
+            this.btnAgregarStock.Text = "Agregar Stock";
+            this.btnAgregarStock.UseVisualStyleBackColor = true;
+            this.btnAgregarStock.Click += new System.EventHandler(this.btnAgregarStock_Click);
+            // 
+            // btnEditar
+            // 
+            this.btnEditar.Location = new System.Drawing.Point(338, 268);
+            this.btnEditar.Name = "btnEditar";
+            this.btnEditar.Size = new System.Drawing.Size(75, 23);
+            this.btnEditar.TabIndex = 12;
+            this.btnEditar.Text = "Editar Venta";
+            this.btnEditar.UseVisualStyleBackColor = true;
+            this.btnEditar.Click += new System.EventHandler(this.btnEditar_Click);
+            // 
+            // btnEditProducto
+            // 
+            this.btnEditProducto.Location = new System.Drawing.Point(321, 90);
+            this.btnEditProducto.Name = "btnEditProducto";
+            this.btnEditProducto.Size = new System.Drawing.Size(92, 23);
+            this.btnEditProducto.TabIndex = 13;
+            this.btnEditProducto.Text = "Editar Producto";
+            this.btnEditProducto.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(533, 292);
+            this.Controls.Add(this.btnEditProducto);
+            this.Controls.Add(this.btnEditar);
+            this.Controls.Add(this.btnAgregarStock);
             this.Controls.Add(this.btnGenerarReporte);
             this.Controls.Add(this.btnAgregar);
             this.Controls.Add(this.label1);
@@ -247,6 +282,9 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Button btnAgregar;
         private System.Windows.Forms.Button btnGenerarReporte;
+        private System.Windows.Forms.Button btnAgregarStock;
+        private System.Windows.Forms.Button btnEditar;
+        private System.Windows.Forms.Button btnEditProducto;
     }
 }
 
