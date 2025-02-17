@@ -155,24 +155,26 @@ namespace FrontEnd
         private void CargarAutocompletado()
         {
             AutoCompleteStringCollection nombresProductos = new AutoCompleteStringCollection();
-            con.Open();
-            string query = "SELECT nombre FROM productos";
-
-            using (SqlCommand cmd = new SqlCommand(query, con))
+            using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
             {
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
+                con.Open();
+                string query = "SELECT nombre FROM productos";
 
-                    while (reader.Read())
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        nombresProductos.Add(reader["nombre"].ToString());
+                        while (reader.Read())
+                        {
+                            nombresProductos.Add(reader["nombre"].ToString());
+                        }
                     }
                 }
             }
-
+            // Asignar una nueva instancia en lugar de modificar la existente
             txtNombreProducto.AutoCompleteCustomSource = nombresProductos;
-            con.Close();
         }
+
 
         private void CalcularSubtotal()
         {
@@ -395,6 +397,19 @@ namespace FrontEnd
         private void btnEditarVenta_Click(object sender, EventArgs e)
         {
           
+        }
+
+        private void btnEditProducto_Click(object sender, EventArgs e)
+        {
+            string nombreProducto = txtNombreProducto.Text;
+            if (string.IsNullOrWhiteSpace(nombreProducto))
+            {
+                MessageBox.Show("Ingrese el nombre del producto a editar.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            FormEditarProducto formEditar = new FormEditarProducto(nombreProducto);
+            formEditar.ShowDialog();
         }
     }
 }
