@@ -8,6 +8,9 @@ using BackEnd.Modelos;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Collections;
 using LucybellVentas;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
+using System.IO;
 
 
 namespace FrontEnd
@@ -184,6 +187,82 @@ namespace FrontEnd
             lblSubtotal.Text = "Subtotal : " + subtotal.ToString("0.00"); // Mostrar con formato adecuado
         }
 
+        public void GenerarReporteVentasDelDia()
+        {
+            string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
+            string fechaHoy = DateTime.Now.ToString("yyyy-MM-dd");
+            string query = @"SELECT V.id_venta, V.fecha, P.nombre AS Producto, DV.cantidad, DV.precio_unitario, DV.total
+                            FROM Ventas V
+                            INNER JOIN DetallesVenta DV ON V.id_venta = DV.id_venta
+                            INNER JOIN Productos P ON DV.id_producto = P.id_producto
+                            WHERE CONVERT(date, V.fecha) = @fechaHoy";
+
+            DataTable dt = new DataTable();
+
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand(query, con);
+                cmd.Parameters.AddWithValue("@fechaHoy", fechaHoy);
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                da.Fill(dt);
+            }
+
+            if (dt.Rows.Count == 0)
+            {
+                MessageBox.Show("No hay ventas registradas para hoy.", "Reporte de ventas", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            //Crear PDF
+            Document doc = new Document(PageSize.A4);
+            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Reporte_Ventas_{fechaHoy}.pdf");
+
+            try
+            {
+                PdfWriter.GetInstance(doc, new FileStream(filePath, FileMode.Create));
+                doc.Open();
+
+                //Titulo
+                Font titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16);
+                Paragraph title = new Paragraph("Reporte de ventas del día", titleFont);
+                title.Alignment = Element.ALIGN_CENTER;
+                title.SpacingAfter = 20;
+                doc.Add(title);
+
+                //Tabla con datos
+                PdfPTable table = new PdfPTable(dt.Columns.Count);
+                table.WidthPercentage = 100;
+
+                //Agregar encabezados
+                foreach (DataColumn col in dt.Columns)
+                {
+                    PdfPCell cell = new PdfPCell(new Phrase(col.ColumnName));
+                    cell.BackgroundColor = new BaseColor(200, 200, 200); //Color gris
+                    cell.HorizontalAlignment = Element.ALIGN_CENTER;
+                    table.AddCell(cell);
+                }
+
+                //Agregar filas de datos
+                foreach (DataRow row in dt.Rows)
+                {
+                    foreach (var item in row.ItemArray)
+                    {
+                        table.AddCell(item.ToString());
+                    }
+                }
+
+                doc.Add(table);
+                doc.Close();
+
+                MessageBox.Show($"Reporte generado con éxito. \nGuardado en: {filePath}", "Reporte generado", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                System.Diagnostics.Process.Start(filePath); //abrir automaticamente
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al generar el reporte: " + ex.Message);
+            }
+        }
+
 
         #endregion
 
@@ -294,8 +373,12 @@ namespace FrontEnd
 
         }
 
+
         #endregion
 
-
+        private void btnGenerarReporte_Click(object sender, EventArgs e)
+        {
+            GenerarReporteVentasDelDia();
+        }
     }
 }
