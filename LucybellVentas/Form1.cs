@@ -21,7 +21,6 @@ namespace FrontEnd
         private List<Venta> ventas = new List<Venta>();
 
         SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;");
-        SqlDataAdapter adapt;
 
         public Form1()
         {
@@ -380,5 +379,7 @@ namespace FrontEnd
         {
             GenerarReporteVentasDelDia();
         }
+
+        
     }
 }
