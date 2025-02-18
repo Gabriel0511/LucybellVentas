@@ -31,6 +31,12 @@ namespace FrontEnd
             this.Shown += (s, e) => txtNombreProducto.Focus();
         }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            dgvResumenVentas.CellValueChanged += dgvResumenVentas_CellValueChanged;
+
+        }
+
         #region TextBox
 
         private void nudCantidad_ValueChanged(object sender, EventArgs e)
@@ -50,13 +56,22 @@ namespace FrontEnd
 
         private void btnRegistrarVenta_Click(object sender, EventArgs e)
         {
-            DatabaseHelper db = new DatabaseHelper();
-            db.RegistrarVenta(txtNombreProducto.Text, Convert.ToInt32(nudCantidad.Text));
+            if(nudCantidad.Value != 0)
+            {
+                DatabaseHelper db = new DatabaseHelper();
+                db.RegistrarVenta(txtNombreProducto.Text, Convert.ToInt32(nudCantidad.Text));
 
-            VerVentas();
+                VerVentas();
 
-            //limpiar textbox
-            txtNombreProducto.Clear();
+                //limpiar textbox
+                txtNombreProducto.Clear();
+                nudCantidad.Value = 0;
+            }
+            else
+            {
+                MessageBox.Show("La cantidad vendida no puede ser cero.");
+            }
+               
         }
 
         private void btnAgregar_Click(object sender, EventArgs e)
@@ -115,7 +130,7 @@ namespace FrontEnd
                         }
                         else
                         {
-                            MessageBox.Show("No se encontró la venta o la venta no está completada.");
+                            MessageBox.Show("La venta ya está anulada.");
                         }
                     }
                     catch (Exception ex)
@@ -128,6 +143,26 @@ namespace FrontEnd
             {
                 MessageBox.Show("Por favor, selecciona una venta para anular.");
             }
+        }
+
+        private void btnEditProducto_Click(object sender, EventArgs e)
+        {
+            string nombreProducto = txtNombreProducto.Text;
+            if (string.IsNullOrWhiteSpace(nombreProducto))
+            {
+                MessageBox.Show("Ingrese el nombre del producto a editar.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            FormEditarProducto formEditar = new FormEditarProducto(nombreProducto);
+            formEditar.ShowDialog();
+
+            ActualizarInfoProducto();
+        }
+
+        private void btnEliminar_Click(object sender, EventArgs e)
+        {
+            EliminarProducto();
         }
 
         #endregion
@@ -144,7 +179,7 @@ namespace FrontEnd
                     DataTable dt = new DataTable();
                     using (SqlDataAdapter adapt = new SqlDataAdapter(
                          "SELECT p.nombre AS 'Producto', p.precio AS 'Precio Unitario', " +
-                        "dv.cantidad AS 'Cantidad', dv.total AS 'Total Venta', v.Estado, v.id_venta " + 
+                        "dv.cantidad AS 'Cantidad', dv.total AS 'Total Venta', v.Estado, v.id_venta " +
                         "FROM Productos p " +
                         "JOIN DetallesVenta dv ON p.id_producto = dv.id_producto " +
                         "JOIN Ventas v ON dv.id_venta = v.id_venta " +
@@ -157,14 +192,8 @@ namespace FrontEnd
                     // Ocultar la columna id_venta
                     dgvResumenVentas.Columns["id_venta"].Visible = false;
 
-                    //Calcular total 
-                    decimal total = 0;
-                    foreach (DataRow row in dt.Rows)
-                    {
-                        total += Convert.ToDecimal(row["Total Venta"]);
-                    }
-
-                    lblTotal.Text = "Total: $" + total.ToString("0.00");
+                    // Llamar a CalcularTotal con los datos cargados
+                    CalcularTotal(dt);
                 }
             }
             catch (Exception ex)
@@ -172,6 +201,22 @@ namespace FrontEnd
                 MessageBox.Show("Error al cargar las ventas: " + ex.Message);
             }
         }
+
+
+        private void CalcularTotal(DataTable dt)
+        {
+            decimal total = 0;
+            foreach (DataRow row in dt.Rows)
+            {
+                if (row["Estado"].ToString() == "Completada") // Filtrar solo ventas completadas
+                {
+                    total += Convert.ToDecimal(row["Total Venta"]);
+                }
+            }
+
+            lblTotal.Text = "Total: $" + total.ToString("0.00");
+        }
+
 
         private void ActualizarInfoProducto()
         {
@@ -326,6 +371,19 @@ namespace FrontEnd
                 MessageBox.Show("Error al generar el reporte: " + ex.Message);
             }
         }
+
+        private void dgvResumenVentas_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            // Verificamos que la columna editada sea la de Estado
+            if (dgvResumenVentas.Columns[e.ColumnIndex].Name == "Estado")
+            {
+                // Obtener los datos actuales del DataGridView
+                DataTable dt = (DataTable)dgvResumenVentas.DataSource;
+                CalcularTotal(dt);
+            }
+        }
+
+
         private void dgvResumenVentas_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
             // Verificar si estamos en la columna 'Estado' y si el valor de la celda es 'Suspendida'
@@ -345,6 +403,54 @@ namespace FrontEnd
                     // Si no está suspendida, restablecer el color a su valor predeterminado
                     dgvResumenVentas.Rows[e.RowIndex].DefaultCellStyle.BackColor = dgvResumenVentas.DefaultCellStyle.BackColor;
                     dgvResumenVentas.Rows[e.RowIndex].DefaultCellStyle.ForeColor = dgvResumenVentas.DefaultCellStyle.ForeColor;
+                }
+            }
+        }
+
+        private void EliminarProducto()
+        {
+            if (idProductoSeleccionado == -1)
+            {
+                MessageBox.Show("Seleccione un producto válido para eliminar.");
+                return;
+            }
+
+            DialogResult result = MessageBox.Show("¿Está seguro de que desea eliminar este producto?",
+                                                  "Confirmar eliminación",
+                                                  MessageBoxButtons.YesNo,
+                                                  MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
+                    {
+                        con.Open();
+
+                        // Eliminar el producto (sin afectar las ventas)
+                        string queryEliminarProducto = "DELETE FROM productos WHERE id_producto = @id";
+                        using (SqlCommand cmdProducto = new SqlCommand(queryEliminarProducto, con))
+                        {
+                            cmdProducto.Parameters.AddWithValue("@id", idProductoSeleccionado);
+                            int rowsAffected = cmdProducto.ExecuteNonQuery();
+
+                            if (rowsAffected > 0)
+                            {
+                                MessageBox.Show("Producto eliminado correctamente.");
+                                txtNombreProducto.Clear();
+                                VerVentas(); // Actualizar lista después de eliminar
+                            }
+                            else
+                            {
+                                MessageBox.Show("No se encontró el producto para eliminar.");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error al eliminar el producto: " + ex.Message);
                 }
             }
         }
@@ -462,83 +568,5 @@ namespace FrontEnd
 
         #endregion
 
-        private void EliminarProducto()
-        {
-            if (idProductoSeleccionado == -1)
-            {
-                MessageBox.Show("Seleccione un producto válido para eliminar.");
-                return;
-            }
-
-            DialogResult result = MessageBox.Show("¿Está seguro de que desea eliminar este producto?",
-                                                  "Confirmar eliminación",
-                                                  MessageBoxButtons.YesNo,
-                                                  MessageBoxIcon.Warning);
-
-            if (result == DialogResult.Yes)
-            {
-                try
-                {
-                    using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
-                    {
-                        con.Open();
-
-                        // Eliminar el producto (sin afectar las ventas)
-                        string queryEliminarProducto = "DELETE FROM productos WHERE id_producto = @id";
-                        using (SqlCommand cmdProducto = new SqlCommand(queryEliminarProducto, con))
-                        {
-                            cmdProducto.Parameters.AddWithValue("@id", idProductoSeleccionado);
-                            int rowsAffected = cmdProducto.ExecuteNonQuery();
-
-                            if (rowsAffected > 0)
-                            {
-                                MessageBox.Show("Producto eliminado correctamente.");
-                                txtNombreProducto.Clear();
-                                VerVentas(); // Actualizar lista después de eliminar
-                            }
-                            else
-                            {
-                                MessageBox.Show("No se encontró el producto para eliminar.");
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error al eliminar el producto: " + ex.Message);
-                }
-            }
-        }
-
-
-
-
-        private void btnAgregarStock_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void btnEditarVenta_Click(object sender, EventArgs e)
-        {
-          
-        }
-
-        private void btnEditProducto_Click(object sender, EventArgs e)
-        {
-            string nombreProducto = txtNombreProducto.Text;
-            if (string.IsNullOrWhiteSpace(nombreProducto))
-            {
-                MessageBox.Show("Ingrese el nombre del producto a editar.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            FormEditarProducto formEditar = new FormEditarProducto(nombreProducto);
-            formEditar.ShowDialog();
-        }
-
-        private void btnEliminar_Click(object sender, EventArgs e)
-        {
-                EliminarProducto();
-        }
     }
 }
