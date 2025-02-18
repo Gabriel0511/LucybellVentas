@@ -70,7 +70,7 @@ namespace FrontEnd
             GenerarReporteVentasDelDia();
         }
 
-        private void btnEditProducto_Click(object sender, EventArgs e)
+        private void BtnEditProducto_Click(object sender, EventArgs e)
         {
             string nombreProducto = txtNombreProducto.Text;
             if (string.IsNullOrWhiteSpace(nombreProducto))
