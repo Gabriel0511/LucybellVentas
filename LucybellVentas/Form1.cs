@@ -26,6 +26,8 @@ namespace FrontEnd
         {
             InitializeComponent();
             VerVentas();
+            dgvResumenVentas.CellFormatting += new DataGridViewCellFormattingEventHandler(dgvResumenVentas_CellFormatting);
+            this.Shown += (s, e) => txtNombreProducto.Focus();
         }
 
         #region TextBox
@@ -67,6 +69,66 @@ namespace FrontEnd
             GenerarReporteVentasDelDia();
         }
 
+        private void btnEditProducto_Click(object sender, EventArgs e)
+        {
+            string nombreProducto = txtNombreProducto.Text;
+            if (string.IsNullOrWhiteSpace(nombreProducto))
+            {
+                MessageBox.Show("Ingrese el nombre del producto a editar.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            FormEditarProducto formEditar = new FormEditarProducto(nombreProducto);
+            formEditar.ShowDialog();
+        }
+        private void btnAnularVenta_Click(object sender, EventArgs e)
+        {
+            // Verificar que se haya seleccionado una venta en el DataGridView
+            if (dgvResumenVentas.SelectedRows.Count > 0)
+            {
+                // Obtener el ID de la venta seleccionada (supongamos que tienes una columna ID_Venta)
+                int idVenta = Convert.ToInt32(dgvResumenVentas.SelectedRows[0].Cells["id_venta"].Value);
+
+                // Definir la consulta SQL para actualizar el estado de la venta
+                string query = "UPDATE Ventas SET Estado = 'Suspendida' WHERE id_venta = @idVenta AND Estado = 'Completada'";
+
+                // Ejecutar la consulta SQL (asegurándote de usar parámetros para evitar inyección SQL)
+                using (SqlConnection conn = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
+                {
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@idVenta", idVenta);
+
+                    try
+                    {
+                        conn.Open();
+                        int rowsAffected = cmd.ExecuteNonQuery();
+
+                        // Verificar si se actualizó correctamente
+                        if (rowsAffected > 0)
+                        {
+                            MessageBox.Show("Venta suspendida correctamente.");
+
+                            // Opcional: Actualizar el DataGridView si es necesario
+                            // Actualizar la fila en el DataGridView
+                            dgvResumenVentas.SelectedRows[0].Cells["Estado"].Value = "Suspendida";
+                        }
+                        else
+                        {
+                            MessageBox.Show("No se encontró la venta o la venta no está completada.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error: " + ex.Message);
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("Por favor, selecciona una venta para anular.");
+            }
+        }
+
         #endregion
 
         #region Metodos
@@ -80,8 +142,8 @@ namespace FrontEnd
                     con.Open();
                     DataTable dt = new DataTable();
                     using (SqlDataAdapter adapt = new SqlDataAdapter(
-                        "SELECT p.nombre AS 'Producto', p.precio AS 'Precio Unitario', " +
-                        "dv.cantidad AS 'Cantidad', dv.total AS 'Total Venta' " +
+                         "SELECT p.nombre AS 'Producto', p.precio AS 'Precio Unitario', " +
+                        "dv.cantidad AS 'Cantidad', dv.total AS 'Total Venta', v.Estado, v.id_venta " + 
                         "FROM Productos p " +
                         "JOIN DetallesVenta dv ON p.id_producto = dv.id_producto " +
                         "JOIN Ventas v ON dv.id_venta = v.id_venta " +
@@ -90,6 +152,9 @@ namespace FrontEnd
                         adapt.Fill(dt);
                     }
                     dgvResumenVentas.DataSource = dt;
+
+                    // Ocultar la columna id_venta
+                    dgvResumenVentas.Columns["id_venta"].Visible = false;
 
                     //Calcular total 
                     decimal total = 0;
@@ -275,7 +340,28 @@ namespace FrontEnd
                 MessageBox.Show("Error al generar el reporte: " + ex.Message);
             }
         }
+        private void dgvResumenVentas_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            // Verificar si estamos en la columna 'Estado' y si el valor de la celda es 'Suspendida'
+            if (dgvResumenVentas.Columns[e.ColumnIndex].Name == "Estado")
+            {
+                // Verificar si el estado es 'Suspendida'
+                if (e.Value != null && e.Value.ToString() == "Suspendida")
+                {
+                    // Cambiar el color de fondo de la fila usando valores RGB
+                    dgvResumenVentas.Rows[e.RowIndex].DefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(211, 211, 211); // Gris claro (RGB)
 
+                    // Opcional: cambiar el color del texto
+                    dgvResumenVentas.Rows[e.RowIndex].DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(0, 0, 0); // Negro (RGB)
+                }
+                else
+                {
+                    // Si no está suspendida, restablecer el color a su valor predeterminado
+                    dgvResumenVentas.Rows[e.RowIndex].DefaultCellStyle.BackColor = dgvResumenVentas.DefaultCellStyle.BackColor;
+                    dgvResumenVentas.Rows[e.RowIndex].DefaultCellStyle.ForeColor = dgvResumenVentas.DefaultCellStyle.ForeColor;
+                }
+            }
+        }
 
         #endregion
 
@@ -387,29 +473,9 @@ namespace FrontEnd
         }
 
 
+
         #endregion
 
-        private void btnAgregarStock_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void btnEditarVenta_Click(object sender, EventArgs e)
-        {
-          
-        }
-
-        private void btnEditProducto_Click(object sender, EventArgs e)
-        {
-            string nombreProducto = txtNombreProducto.Text;
-            if (string.IsNullOrWhiteSpace(nombreProducto))
-            {
-                MessageBox.Show("Ingrese el nombre del producto a editar.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            FormEditarProducto formEditar = new FormEditarProducto(nombreProducto);
-            formEditar.ShowDialog();
-        }
+        
     }
 }
