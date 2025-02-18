@@ -74,7 +74,7 @@ namespace LucybellVentas
                     int rowsAffected = cmd.ExecuteNonQuery();
 
                     if (rowsAffected > 0)
-                        MessageBox.Show("Producto actulizado correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show("Producto actualizado correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     else
                         MessageBox.Show("No se encontró el producto.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 

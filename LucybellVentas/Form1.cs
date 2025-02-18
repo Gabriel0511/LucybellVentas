@@ -11,6 +11,9 @@ using LucybellVentas;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
 using System.IO;
+using System.Reflection;
+using static iTextSharp.text.pdf.XfaForm;
+using System.Drawing;
 
 
 namespace FrontEnd
@@ -43,11 +46,19 @@ namespace FrontEnd
         {
             CalcularSubtotal();
         }
-
         private void txtNombreProducto_TextChanged(object sender, EventArgs e)
         {
+            // Mostrar u ocultar el ListBox según si hay texto en el TextBox
+            if (string.IsNullOrWhiteSpace(txtNombreProducto.Text))
+            {
+                listBoxProductos.Visible = false;
+            }
+            else
+            {
+                CargarAutocompletado(txtNombreProducto.Text);
+                listBoxProductos.Visible = true;
+            }
             ActualizarInfoProducto();
-            CargarAutocompletado();
         }
 
         #endregion
@@ -158,6 +169,8 @@ namespace FrontEnd
             formEditar.ShowDialog();
 
             ActualizarInfoProducto();
+
+            txtNombreProducto.Text = "";
         }
 
         private void btnEliminar_Click(object sender, EventArgs e)
@@ -179,7 +192,7 @@ namespace FrontEnd
                     DataTable dt = new DataTable();
                     using (SqlDataAdapter adapt = new SqlDataAdapter(
                          "SELECT p.nombre AS 'Producto', p.precio AS 'Precio Unitario', " +
-                        "dv.cantidad AS 'Cantidad', dv.total AS 'Total Venta', v.Estado, v.id_venta " +
+                        "dv.cantidad AS 'Cantidad', dv.total AS 'Subtotal', v.Estado, v.id_venta " +
                         "FROM Productos p " +
                         "JOIN DetallesVenta dv ON p.id_producto = dv.id_producto " +
                         "JOIN Ventas v ON dv.id_venta = v.id_venta " +
@@ -210,7 +223,7 @@ namespace FrontEnd
             {
                 if (row["Estado"].ToString() == "Completada") // Filtrar solo ventas completadas
                 {
-                    total += Convert.ToDecimal(row["Total Venta"]);
+                    total += Convert.ToDecimal(row["Subtotal"]);
                 }
             }
 
@@ -220,56 +233,97 @@ namespace FrontEnd
 
         private void ActualizarInfoProducto()
         {
-            con.Open();
-            string query = "SELECT id_producto, nombre, precio, stock FROM productos WHERE nombre = @nombre";
-
-            using (SqlCommand cmd = new SqlCommand(query, con))
-            {
-                cmd.Parameters.AddWithValue("@nombre", txtNombreProducto.Text);
-
-                using (SqlDataReader reader = cmd.ExecuteReader())
-                {
-                    if (reader.Read())
-                    {
-                        idProductoSeleccionado = Convert.ToInt32(reader["id_producto"]);
-                        lblStockDisponible.Text = "Stock : " + reader["stock"].ToString();
-                        lblPrecioUnitario.Text = "Precio : " + reader["precio"].ToString();
-                        nudCantidad.Enabled = (Convert.ToInt32(reader["stock"]) > 0);
-                    }
-                    else
-                    {
-                        idProductoSeleccionado = -1; // Si no encuentra el producto
-                        lblStockDisponible.Text = "Stock : 0";
-                        lblPrecioUnitario.Text = "Precio : 0";
-                        nudCantidad.Enabled = false;
-                    }
-                }
-            }
-            con.Close();
-        }
-
-        private void CargarAutocompletado()
-        {
-            AutoCompleteStringCollection nombresProductos = new AutoCompleteStringCollection();
-            using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
+            try
             {
                 con.Open();
-                string query = "SELECT nombre FROM productos";
+                string query = "SELECT id_producto, nombre, precio, stock FROM productos WHERE nombre = @nombre";
 
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
+                    cmd.Parameters.AddWithValue("@nombre", txtNombreProducto.Text);
+
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        while (reader.Read())
+                        if (reader.Read())
                         {
-                            nombresProductos.Add(reader["nombre"].ToString());
+                            idProductoSeleccionado = Convert.ToInt32(reader["id_producto"]);
+                            lblStockDisponible.Text = "Stock : " + reader["stock"].ToString();
+                            lblPrecioUnitario.Text = "Precio : " + reader["precio"].ToString();
+                            nudCantidad.Enabled = (Convert.ToInt32(reader["stock"]) > 0);
+                            if (lblStockDisponible.Text == "Stock : 0")
+                            {
+                                nudCantidad.Value = 0;
+                            }
+                            else
+                            {
+                                nudCantidad.Value = 1;
+                            }
+                        }
+                        else
+                        {
+                            idProductoSeleccionado = -1; // Si no encuentra el producto
+                            lblStockDisponible.Text = "Stock : 0";
+                            lblPrecioUnitario.Text = "Precio : 0";
+                            lblSubtotal.Text = "Subtotal : 0"; 
+                            nudCantidad.Enabled = false;
+                            nudCantidad.Value = 0;
                         }
                     }
                 }
             }
-            // Asignar una nueva instancia en lugar de modificar la existente
-            txtNombreProducto.AutoCompleteCustomSource = nombresProductos;
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al actualizar la información del producto: " + ex.Message);
+            }
+            finally
+            {
+                con.Close();
+            }
         }
+
+        private void CargarAutocompletado(string filtro)
+        {
+            try
+            {
+                // Limpiar el ListBox antes de cargar nuevos datos
+                listBoxProductos.Items.Clear();
+
+                using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
+                {
+                    con.Open();
+                    // Filtrar productos que coincidan con el texto ingresado
+                    string query = "SELECT nombre FROM productos WHERE nombre LIKE @filtro";
+                    using (SqlCommand cmd = new SqlCommand(query, con))
+                    {
+                        cmd.Parameters.AddWithValue("@filtro", $"%{filtro}%"); // Usar % para buscar coincidencias parciales
+
+                        using (SqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                // Agregar cada producto al ListBox
+                                listBoxProductos.Items.Add(reader["nombre"].ToString());
+                            }
+                        }
+                    }
+                }
+
+                // Mostrar el ListBox si hay resultados
+                if (listBoxProductos.Items.Count > 0)
+                {
+                    listBoxProductos.Visible = true;
+                }
+                else
+                {
+                    listBoxProductos.Visible = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar los productos: " + ex.Message);
+            }
+        }
+
 
 
         private void CalcularSubtotal()
@@ -300,11 +354,11 @@ namespace FrontEnd
         {
             string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
             string fechaHoy = DateTime.Now.ToString("yyyy-MM-dd");
-            string query = @"SELECT V.id_venta, V.fecha, P.nombre AS Producto, DV.cantidad, DV.precio_unitario, DV.total
-                            FROM Ventas V
-                            INNER JOIN DetallesVenta DV ON V.id_venta = DV.id_venta
-                            INNER JOIN Productos P ON DV.id_producto = P.id_producto
-                            WHERE CONVERT(date, V.fecha) = @fechaHoy";
+            string query = @"SELECT  V.fecha AS 'Fecha', P.nombre AS Producto, DV.cantidad AS 'Cantidad', DV.precio_unitario AS 'Precio Unitario', DV.total AS 'Subtotal', V.Estado
+                    FROM Ventas V
+                    INNER JOIN DetallesVenta DV ON V.id_venta = DV.id_venta
+                    INNER JOIN Productos P ON DV.id_producto = P.id_producto
+                    WHERE CONVERT(date, V.fecha) = @fechaHoy";
 
             DataTable dt = new DataTable();
 
@@ -322,7 +376,7 @@ namespace FrontEnd
                 return;
             }
 
-            //Crear PDF
+            // Crear PDF
             Document doc = new Document(PageSize.A4);
             string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Reporte_Ventas_{fechaHoy}.pdf");
 
@@ -331,46 +385,99 @@ namespace FrontEnd
                 PdfWriter.GetInstance(doc, new FileStream(filePath, FileMode.Create));
                 doc.Open();
 
-                //Titulo
-                Font titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16);
-                Paragraph title = new Paragraph("Reporte de ventas del día", titleFont);
-                title.Alignment = Element.ALIGN_CENTER;
-                title.SpacingAfter = 20;
-                doc.Add(title);
+                // Crear tabla para logo y título
+                PdfPTable headerTable = new PdfPTable(1); // Una sola columna
+                headerTable.WidthPercentage = 100;
+                headerTable.DefaultCell.Border = iTextSharp.text.Rectangle.NO_BORDER; // Sin bordes en las celdas
 
-                //Tabla con datos
+                // Agregar logo desde recursos incrustados
+                string logoPath = "LucybellVentas.img.epico.jpg"; // Nombre del recurso incrustado
+                var assembly = Assembly.GetExecutingAssembly();
+                using (Stream stream = assembly.GetManifestResourceStream(logoPath))
+                {
+                    if (stream != null)
+                    {
+                        iTextSharp.text.Image logo = iTextSharp.text.Image.GetInstance(stream);
+                        logo.ScaleToFit(100f, 100f); // Redimensiona el logo
+                        PdfPCell logoCell = new PdfPCell(logo);
+                        logoCell.Border = iTextSharp.text.Rectangle.NO_BORDER;
+                        logoCell.HorizontalAlignment = Element.ALIGN_CENTER; // Centrar logo
+                        headerTable.AddCell(logoCell);
+                    }
+                    else
+                    {
+                        throw new Exception("No se pudo cargar el logo desde los recursos.");
+                    }
+                }
+
+                // Agregar título debajo del logo
+                iTextSharp.text.Font titleFont = iTextSharp.text.FontFactory.GetFont(iTextSharp.text.FontFactory.HELVETICA_BOLD, 16);
+                PdfPCell titleCell = new PdfPCell(new Phrase("Reporte de ventas del día \n ", titleFont));
+                titleCell.Border = iTextSharp.text.Rectangle.NO_BORDER;
+                titleCell.HorizontalAlignment = Element.ALIGN_CENTER; // Centrar título
+                headerTable.AddCell(titleCell);
+
+                doc.Add(headerTable);
+
+                // Tabla con datos
                 PdfPTable table = new PdfPTable(dt.Columns.Count);
                 table.WidthPercentage = 100;
 
-                //Agregar encabezados
+                // Agregar encabezados
                 foreach (DataColumn col in dt.Columns)
                 {
                     PdfPCell cell = new PdfPCell(new Phrase(col.ColumnName));
-                    cell.BackgroundColor = new BaseColor(200, 200, 200); //Color gris
+                    cell.BackgroundColor = new BaseColor(192, 192, 255); // Violeta clarito
                     cell.HorizontalAlignment = Element.ALIGN_CENTER;
                     table.AddCell(cell);
                 }
 
-                //Agregar filas de datos
+                // Agregar filas de datos
                 foreach (DataRow row in dt.Rows)
                 {
                     foreach (var item in row.ItemArray)
                     {
-                        table.AddCell(item.ToString());
+                        string estado = row["Estado"].ToString();
+                        PdfPCell cell = new PdfPCell(new Phrase(item.ToString()));
+
+                        // Colorear las filas dependiendo del estado
+                        if (estado == "Completada")
+                        {
+                            cell.BackgroundColor = new BaseColor(255, 239, 184); // Papaya
+                        }
+                        else if (estado == "Suspendida")
+                        {
+                            cell.BackgroundColor = new BaseColor(211, 211, 211); // Gris
+                        }
+
+                        cell.HorizontalAlignment = Element.ALIGN_CENTER;
+                        table.AddCell(cell);
                     }
                 }
 
                 doc.Add(table);
+
+                // Agregar total desde lblTotal.Text al final del PDF
+                string totalVenta = lblTotal.Text; // Obtener el total desde lblTotal
+                iTextSharp.text.Font totalFont = iTextSharp.text.FontFactory.GetFont(iTextSharp.text.FontFactory.HELVETICA_BOLD, 12);
+                Paragraph totalParagraph = new Paragraph(totalVenta, totalFont);
+                totalParagraph.Alignment = Element.ALIGN_RIGHT;
+                totalParagraph.SpacingBefore = 20; // Espacio antes del total
+                doc.Add(totalParagraph);
+
                 doc.Close();
 
                 MessageBox.Show($"Reporte generado con éxito. \nGuardado en: {filePath}", "Reporte generado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                System.Diagnostics.Process.Start(filePath); //abrir automaticamente
+                System.Diagnostics.Process.Start(filePath); // Abrir automáticamente
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al generar el reporte: " + ex.Message);
             }
         }
+
+
+
 
         private void dgvResumenVentas_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
@@ -382,7 +489,6 @@ namespace FrontEnd
                 CalcularTotal(dt);
             }
         }
-
 
         private void dgvResumenVentas_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
         {
@@ -564,9 +670,16 @@ namespace FrontEnd
 
         }
 
-
-
         #endregion
 
+        private void listBoxProductos_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            // Cuando el usuario selecciona un producto del ListBox, colocarlo en el TextBox
+            if (listBoxProductos.SelectedItem != null)
+            {
+                txtNombreProducto.Text = listBoxProductos.SelectedItem.ToString();
+                listBoxProductos.Visible = false; // Ocultar el ListBox después de seleccionar
+            }
+        }
     }
 }
