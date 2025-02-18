@@ -45,6 +45,7 @@
             this.btnGenerarReporte = new System.Windows.Forms.Button();
             this.btnAnularVenta = new System.Windows.Forms.Button();
             this.btnEditProducto = new System.Windows.Forms.Button();
+            this.btnEliminar = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.nudCantidad)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResumenVentas)).BeginInit();
             this.SuspendLayout();
@@ -229,12 +230,22 @@
             this.btnEditProducto.UseVisualStyleBackColor = true;
             this.btnEditProducto.Click += new System.EventHandler(this.btnEditProducto_Click);
             // 
+            // btnEliminar
+            // 
+            this.btnEliminar.Location = new System.Drawing.Point(211, 90);
+            this.btnEliminar.Name = "btnEliminar";
+            this.btnEliminar.Size = new System.Drawing.Size(104, 23);
+            this.btnEliminar.TabIndex = 14;
+            this.btnEliminar.Text = "Eliminar Producto";
+            this.btnEliminar.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(533, 292);
+            this.Controls.Add(this.btnEliminar);
             this.Controls.Add(this.btnEditProducto);
             this.Controls.Add(this.btnAnularVenta);
             this.Controls.Add(this.btnGenerarReporte);
@@ -273,6 +284,7 @@
         private System.Windows.Forms.Button btnGenerarReporte;
         private System.Windows.Forms.Button btnAnularVenta;
         private System.Windows.Forms.Button btnEditProducto;
+        private System.Windows.Forms.Button btnEliminar;
     }
 }
 

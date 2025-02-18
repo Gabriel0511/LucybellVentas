@@ -19,6 +19,7 @@ namespace FrontEnd
     {
         private List<Producto> productos = new List<Producto>();
         private List<Venta> ventas = new List<Venta>();
+        private int idProductoSeleccionado = -1;
 
         SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;");
 
@@ -175,7 +176,7 @@ namespace FrontEnd
         private void ActualizarInfoProducto()
         {
             con.Open();
-            string query = "SELECT nombre, precio, stock FROM productos WHERE nombre LIKE @nombre";
+            string query = "SELECT id_producto, nombre, precio, stock FROM productos WHERE nombre = @nombre";
 
             using (SqlCommand cmd = new SqlCommand(query, con))
             {
@@ -183,38 +184,23 @@ namespace FrontEnd
 
                 using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    int totalStock = 0;
-                    decimal totalPrecio = 0;
-
-                    while (reader.Read())
+                    if (reader.Read())
                     {
-                        string nombre = reader["nombre"].ToString();
-                        decimal precio = Convert.ToDecimal(reader["precio"]);
-                        int stock = Convert.ToInt32(reader["stock"]);
-
-                        totalStock += stock;
-                        totalPrecio += precio;
-                    }
-                    lblStockDisponible.Text = "Stock : " + totalStock.ToString();
-                    lblPrecioUnitario.Text = "Precio : " + totalPrecio.ToString();
-
-
-                    if (lblStockDisponible.Text != "Stock : 0")
-                    {
-                        nudCantidad.Value = 1;
-                        nudCantidad.Enabled = true;
-
+                        idProductoSeleccionado = Convert.ToInt32(reader["id_producto"]);
+                        lblStockDisponible.Text = "Stock : " + reader["stock"].ToString();
+                        lblPrecioUnitario.Text = "Precio : " + reader["precio"].ToString();
+                        nudCantidad.Enabled = (Convert.ToInt32(reader["stock"]) > 0);
                     }
                     else
                     {
-                        nudCantidad.Value = 0;
+                        idProductoSeleccionado = -1; // Si no encuentra el producto
+                        lblStockDisponible.Text = "Stock : 0";
+                        lblPrecioUnitario.Text = "Precio : 0";
                         nudCantidad.Enabled = false;
                     }
-
                 }
             }
             con.Close();
-
         }
 
         private void CargarAutocompletado()
@@ -476,6 +462,83 @@ namespace FrontEnd
 
         #endregion
 
-        
+        private void EliminarProducto()
+        {
+            if (idProductoSeleccionado == -1)
+            {
+                MessageBox.Show("Seleccione un producto válido para eliminar.");
+                return;
+            }
+
+            DialogResult result = MessageBox.Show("¿Está seguro de que desea eliminar este producto?",
+                                                  "Confirmar eliminación",
+                                                  MessageBoxButtons.YesNo,
+                                                  MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
+                    {
+                        con.Open();
+
+                        // Eliminar el producto (sin afectar las ventas)
+                        string queryEliminarProducto = "DELETE FROM productos WHERE id_producto = @id";
+                        using (SqlCommand cmdProducto = new SqlCommand(queryEliminarProducto, con))
+                        {
+                            cmdProducto.Parameters.AddWithValue("@id", idProductoSeleccionado);
+                            int rowsAffected = cmdProducto.ExecuteNonQuery();
+
+                            if (rowsAffected > 0)
+                            {
+                                MessageBox.Show("Producto eliminado correctamente.");
+                                txtNombreProducto.Clear();
+                                VerVentas(); // Actualizar lista después de eliminar
+                            }
+                            else
+                            {
+                                MessageBox.Show("No se encontró el producto para eliminar.");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error al eliminar el producto: " + ex.Message);
+                }
+            }
+        }
+
+
+
+
+        private void btnAgregarStock_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnEditarVenta_Click(object sender, EventArgs e)
+        {
+          
+        }
+
+        private void btnEditProducto_Click(object sender, EventArgs e)
+        {
+            string nombreProducto = txtNombreProducto.Text;
+            if (string.IsNullOrWhiteSpace(nombreProducto))
+            {
+                MessageBox.Show("Ingrese el nombre del producto a editar.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            FormEditarProducto formEditar = new FormEditarProducto(nombreProducto);
+            formEditar.ShowDialog();
+        }
+
+        private void btnEliminar_Click(object sender, EventArgs e)
+        {
+                EliminarProducto();
+        }
     }
 }
