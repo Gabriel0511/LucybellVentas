@@ -49,6 +49,9 @@
             this.lblTotal = new System.Windows.Forms.Label();
             this.listBoxProductos = new System.Windows.Forms.ListBox();
             this.btnVerProductos = new System.Windows.Forms.Button();
+            this.dtpFecha = new System.Windows.Forms.DateTimePicker();
+            this.lblFiltro = new System.Windows.Forms.Label();
+            this.btnVerTodas = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.nudCantidad)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResumenVentas)).BeginInit();
             this.SuspendLayout();
@@ -279,12 +282,46 @@
             this.btnVerProductos.UseVisualStyleBackColor = true;
             this.btnVerProductos.Click += new System.EventHandler(this.btnVerProductos_Click);
             // 
+            // dtpFecha
+            // 
+            this.dtpFecha.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.dtpFecha.Format = System.Windows.Forms.DateTimePickerFormat.Short;
+            this.dtpFecha.Location = new System.Drawing.Point(355, 200);
+            this.dtpFecha.Name = "dtpFecha";
+            this.dtpFecha.Size = new System.Drawing.Size(185, 22);
+            this.dtpFecha.TabIndex = 18;
+            this.dtpFecha.ValueChanged += new System.EventHandler(this.dtpFecha_ValueChanged_1);
+            // 
+            // lblFiltro
+            // 
+            this.lblFiltro.AutoSize = true;
+            this.lblFiltro.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblFiltro.Location = new System.Drawing.Point(248, 203);
+            this.lblFiltro.Name = "lblFiltro";
+            this.lblFiltro.Size = new System.Drawing.Size(101, 16);
+            this.lblFiltro.TabIndex = 19;
+            this.lblFiltro.Text = "Filtro por fecha :";
+            // 
+            // btnVerTodas
+            // 
+            this.btnVerTodas.Font = new System.Drawing.Font("Microsoft Sans Serif", 6.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnVerTodas.Location = new System.Drawing.Point(546, 188);
+            this.btnVerTodas.Name = "btnVerTodas";
+            this.btnVerTodas.Size = new System.Drawing.Size(38, 36);
+            this.btnVerTodas.TabIndex = 20;
+            this.btnVerTodas.Text = "Ver Todas";
+            this.btnVerTodas.UseVisualStyleBackColor = true;
+            this.btnVerTodas.Click += new System.EventHandler(this.btnVerTodas_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(929, 649);
+            this.Controls.Add(this.btnVerTodas);
+            this.Controls.Add(this.lblFiltro);
+            this.Controls.Add(this.dtpFecha);
             this.Controls.Add(this.btnVerProductos);
             this.Controls.Add(this.listBoxProductos);
             this.Controls.Add(this.lblTotal);
@@ -333,6 +370,9 @@
         private System.Windows.Forms.Label lblTotal;
         private System.Windows.Forms.ListBox listBoxProductos;
         private System.Windows.Forms.Button btnVerProductos;
+        private System.Windows.Forms.DateTimePicker dtpFecha;
+        private System.Windows.Forms.Label lblFiltro;
+        private System.Windows.Forms.Button btnVerTodas;
     }
 }
 

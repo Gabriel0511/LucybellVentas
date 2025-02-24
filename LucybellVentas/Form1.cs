@@ -40,17 +40,24 @@ namespace FrontEnd
         {
             InitializeComponent();
             VerVentas();
-            
+
             dgvResumenVentas.CellFormatting += new DataGridViewCellFormattingEventHandler(dgvResumenVentas_CellFormatting);
             this.Shown += (s, e) => txtNombreProducto.Focus();
+
+            // Manejar el evento cuando cambia la fecha
+            dtpFecha.ValueChanged += dtpFecha_ValueChanged;
+
+            // Configurar el formato personalizado al principio
+            dtpFecha.CustomFormat = " ";  // Texto para indicar que no se ha seleccionado una fecha
+            dtpFecha.Format = DateTimePickerFormat.Custom; // Usar formato personalizado
         }
+
 
         private void Form1_Load(object sender, EventArgs e)
         {
             dgvResumenVentas.CellValueChanged += dgvResumenVentas_CellValueChanged;
             // Desactivar la selección automática
             dgvResumenVentas.ClearSelection();
-
         }
 
         #region Controles
@@ -90,6 +97,25 @@ namespace FrontEnd
 
                 // Ahora sí actualizar la información del producto
                 ActualizarInfoProducto();
+            }
+        }
+
+        private void dtpFecha_ValueChanged_1(object sender, EventArgs e)
+        {
+
+            listBoxProductos.Visible = false;
+            dgvResumenVentas.ClearSelection();
+
+            // Si se selecciona una fecha diferente de la fecha mínima (es decir, si se seleccionó una fecha válida)
+            if (dtpFecha.Value != DateTimePicker.MinimumDateTime)
+            {
+                // Si hay una fecha seleccionada, mostrarla en formato de fecha normal
+                dtpFecha.CustomFormat = "dd/MM/yyyy"; // Formato normal de fecha
+            }
+            else
+            {
+                // Si no se ha seleccionado fecha, mostrar el texto personalizado
+                dtpFecha.CustomFormat = " ";  // Indicar que no se ha seleccionado fecha
             }
         }
 
@@ -306,6 +332,17 @@ namespace FrontEnd
             }         
         }
 
+        private void btnVerTodas_Click(object sender, EventArgs e)
+        {
+            listBoxProductos.Visible = false;
+
+            DatabaseHelper dbHelper = new DatabaseHelper();
+            DataTable ventas = dbHelper.ObtenerTodasLasVentas();
+            dgvResumenVentas.DataSource = ventas;
+
+            dgvResumenVentas.ClearSelection();
+        }
+
         #endregion
 
         #region Metodos
@@ -447,7 +484,7 @@ namespace FrontEnd
         {
             string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
             string fechaHoy = DateTime.Now.ToString("yyyy-MM-dd");
-            string query = @"SELECT  V.fecha AS 'Fecha', P.nombre AS Producto, DV.cantidad AS 'Cantidad', DV.precio_unitario AS 'Precio Unitario', DV.total AS 'Subtotal', V.Estado
+            string query = @"SELECT  V.fecha AS 'Fecha y hora', P.nombre AS Producto, DV.cantidad AS 'Cantidad', DV.precio_unitario AS 'Precio Unitario', DV.total AS 'Subtotal', V.Estado
                     FROM Ventas V
                     INNER JOIN DetallesVenta DV ON V.id_venta = DV.id_venta
                     INNER JOIN Productos P ON DV.id_producto = P.id_producto
@@ -603,6 +640,37 @@ namespace FrontEnd
             }
         }
 
+        private void VerVentasPorFecha(DateTime fechaSeleccionada)
+        {
+            try
+            {
+                DatabaseHelper dbHelper = new DatabaseHelper();
+                DataTable ventasPorFecha = dbHelper.ObtenerVentasPorFecha(fechaSeleccionada);
+
+                dgvResumenVentas.DataSource = ventasPorFecha;
+
+                // Ocultar la columna id_venta si existe
+                if (dgvResumenVentas.Columns.Contains("id_venta"))
+                {
+                    dgvResumenVentas.Columns["id_venta"].Visible = false;
+                }
+
+                // Calcular el total solo con los datos de la fecha seleccionada
+                CalcularTotal(ventasPorFecha);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar las ventas: " + ex.Message);
+            }
+            dgvResumenVentas.ClearSelection();
+        }
+
+
+        private void dtpFecha_ValueChanged(object sender, EventArgs e)
+        {
+            VerVentasPorFecha(dtpFecha.Value);
+        }
+
         #endregion
 
         #region Clicks
@@ -631,6 +699,7 @@ namespace FrontEnd
         }
 
         #endregion
+
 
     }
 }
