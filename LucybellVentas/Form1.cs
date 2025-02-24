@@ -483,32 +483,34 @@ namespace FrontEnd
         public void GenerarReporteVentasDelDia()
         {
             string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
-            string fechaHoy = DateTime.Now.ToString("yyyy-MM-dd");
+            // Obtener la fecha seleccionada en el DateTimePicker
+            string fechaSeleccionada = dtpFecha.Value.ToString("yyyy-MM-dd");
+
             string query = @"SELECT  V.fecha AS 'Fecha y hora', P.nombre AS Producto, DV.cantidad AS 'Cantidad', DV.precio_unitario AS 'Precio Unitario', DV.total AS 'Subtotal', V.Estado
-                    FROM Ventas V
-                    INNER JOIN DetallesVenta DV ON V.id_venta = DV.id_venta
-                    INNER JOIN Productos P ON DV.id_producto = P.id_producto
-                    WHERE CONVERT(date, V.fecha) = @fechaHoy";
+            FROM Ventas V
+            INNER JOIN DetallesVenta DV ON V.id_venta = DV.id_venta
+            INNER JOIN Productos P ON DV.id_producto = P.id_producto
+            WHERE CONVERT(date, V.fecha) = @fechaSeleccionada";
 
             DataTable dt = new DataTable();
 
             using (SqlConnection con = new SqlConnection(connectionString))
             {
                 SqlCommand cmd = new SqlCommand(query, con);
-                cmd.Parameters.AddWithValue("@fechaHoy", fechaHoy);
+                cmd.Parameters.AddWithValue("@fechaSeleccionada", fechaSeleccionada);
                 SqlDataAdapter da = new SqlDataAdapter(cmd);
                 da.Fill(dt);
             }
 
             if (dt.Rows.Count == 0)
             {
-                MessageBox.Show("No hay ventas registradas para hoy.", "Reporte de ventas", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("No hay ventas registradas para la fecha seleccionada.", "Reporte de ventas", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             // Crear PDF
             Document doc = new Document(PageSize.A4);
-            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Reporte_Ventas_{fechaHoy}.pdf");
+            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Reporte_Ventas_{fechaSeleccionada}.pdf");
 
             try
             {
@@ -605,6 +607,7 @@ namespace FrontEnd
                 MessageBox.Show("Error al generar el reporte: " + ex.Message);
             }
         }
+
 
         private void dgvResumenVentas_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {

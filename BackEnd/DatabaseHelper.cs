@@ -312,8 +312,6 @@ namespace BackEnd
             return ventaSuspendida;
         }
 
-
-
         public int EditarProducto(Producto producto, string nombreOriginal)
         {
             int rowsAffected = 0;
@@ -380,7 +378,5 @@ namespace BackEnd
 
             return dt;
         }
-
-
     }
 }
