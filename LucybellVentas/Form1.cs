@@ -324,8 +324,6 @@ namespace FrontEnd
             }
         }
 
-
-
         private void CalcularSubtotal()
         {
 
