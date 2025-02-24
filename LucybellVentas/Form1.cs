@@ -213,19 +213,54 @@ namespace FrontEnd
 
             Producto producto = dbHelper.ObtenerInfoProducto(txtNombreProducto.Text);
 
+            // Verificar si el producto existe antes de continuar
+            if (producto == null)
+            {
+                MessageBox.Show("No se encontró el producto especificado.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             int idProducto = producto.id_producto;
 
+            // Primera confirmación
+            DialogResult confirmacion1 = MessageBox.Show(
+                "¿Estás seguro de que quieres eliminar este producto?",
+                "Confirmar eliminación",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirmacion1 == DialogResult.No)
+            {
+                return; // Cancelar eliminación
+            }
+
+            // Segunda confirmación
+            DialogResult confirmacion2 = MessageBox.Show(
+                "Este producto también se eliminará de las ventas. ¿Deseas continuar?",
+                "Advertencia",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirmacion2 == DialogResult.No)
+            {
+                return; // Cancelar eliminación
+            }
+
+            // Proceder con la eliminación
             bool productoEliminado = dbHelper.EliminarProducto(idProducto);
 
             if (productoEliminado)
             {
-                MessageBox.Show("Producto eliminado correctamente.");
+                MessageBox.Show("Producto eliminado correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                MessageBox.Show("No se pudo eliminar el producto.");
+                MessageBox.Show("No se pudo eliminar el producto.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
+            txtNombreProducto.Clear();
+            nudCantidad.Value = 0;
+            VerVentas();
         }
 
         private void btnVerProductos_Click(object sender, EventArgs e)

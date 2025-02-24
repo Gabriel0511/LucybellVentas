@@ -182,57 +182,43 @@ namespace BackEnd
         {
             using (SqlConnection con = new SqlConnection(connectionString))
             {
-                // Iniciar una transacción
-                SqlTransaction transaction = null;
-
-                // Consultas
-                string queryActualizarDetalleVentas = "UPDATE DetalleVentas SET id_producto = NULL WHERE id_producto = @idProducto";
-                string queryEliminarProducto = "DELETE FROM productos WHERE id_producto = @id";
-
-                SqlCommand cmdActualizarDetalleVentas = new SqlCommand(queryActualizarDetalleVentas, con);
-                cmdActualizarDetalleVentas.Parameters.AddWithValue("@idProducto", idProducto);
-
-                SqlCommand cmdEliminarProducto = new SqlCommand(queryEliminarProducto, con);
-                cmdEliminarProducto.Parameters.AddWithValue("@id", idProducto);
-
                 try
                 {
                     con.Open();
-
-                    // Iniciar la transacción
-                    transaction = con.BeginTransaction();
-
-                    // Asignar la transacción a los comandos
-                    cmdActualizarDetalleVentas.Transaction = transaction;
-                    cmdEliminarProducto.Transaction = transaction;
-
-                    // Ejecutar primero la actualización de DetalleVentas
-                    cmdActualizarDetalleVentas.ExecuteNonQuery();
-
-                    // Luego eliminar el producto de Productos
-                    int rowsAffected = cmdEliminarProducto.ExecuteNonQuery();
-
-                    // Si se eliminaron filas, hacer commit, si no, hacer rollback
-                    if (rowsAffected > 0)
+                    using (SqlTransaction transaction = con.BeginTransaction())
                     {
-                        transaction.Commit();
-                        return true;
-                    }
-                    else
-                    {
-                        transaction.Rollback();
-                        return false;
+                        // Actualizar DetalleVentas para desvincular el producto
+                        string queryActualizarDetalleVentas = "UPDATE DetallesVenta SET id_producto = NULL WHERE id_producto = @idProducto";
+                        using (SqlCommand cmdActualizarDetalleVentas = new SqlCommand(queryActualizarDetalleVentas, con, transaction))
+                        {
+                            cmdActualizarDetalleVentas.Parameters.AddWithValue("@idProducto", idProducto);
+                            cmdActualizarDetalleVentas.ExecuteNonQuery();
+                        }
+
+                        // Eliminar producto de la tabla productos
+                        string queryEliminarProducto = "DELETE FROM productos WHERE id_producto = @idProducto";
+                        using (SqlCommand cmdEliminarProducto = new SqlCommand(queryEliminarProducto, con, transaction))
+                        {
+                            cmdEliminarProducto.Parameters.AddWithValue("@idProducto", idProducto);
+                            int rowsAffected = cmdEliminarProducto.ExecuteNonQuery();
+
+                            if (rowsAffected > 0)
+                            {
+                                transaction.Commit();
+                                return true;
+                            }
+                            else
+                            {
+                                transaction.Rollback();
+                                return false;
+                            }
+                        }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // En caso de error, hacer rollback
-                    transaction?.Rollback();
+                    Console.WriteLine("Error: " + ex.Message);
                     return false;
-                }
-                finally
-                {
-                    con.Close();
                 }
             }
         }

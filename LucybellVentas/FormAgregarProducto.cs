@@ -77,6 +77,7 @@ namespace LucybellVentas
                 txtNombre.Clear();
                 txtPrecio.Clear();
                 txtStock.Clear();
+                this.Close();
             }
             catch (Exception ex)
             {
