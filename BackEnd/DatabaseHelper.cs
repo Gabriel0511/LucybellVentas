@@ -131,7 +131,7 @@ namespace BackEnd
             List<string> productos = new List<string>();
             using (SqlConnection con = new SqlConnection(connectionString))
             {
-                string query = "SELECT nombre FROM productos";
+                string query = "SELECT nombre FROM productos ORDER BY nombre ASC";
                 SqlCommand cmd = new SqlCommand(query, con);
 
                 con.Open();

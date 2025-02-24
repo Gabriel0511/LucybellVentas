@@ -319,11 +319,11 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(929, 649);
+            this.Controls.Add(this.listBoxProductos);
             this.Controls.Add(this.btnVerTodas);
             this.Controls.Add(this.lblFiltro);
             this.Controls.Add(this.dtpFecha);
             this.Controls.Add(this.btnVerProductos);
-            this.Controls.Add(this.listBoxProductos);
             this.Controls.Add(this.lblTotal);
             this.Controls.Add(this.btnEliminar);
             this.Controls.Add(this.btnEditProducto);
