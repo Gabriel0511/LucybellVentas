@@ -253,37 +253,67 @@ namespace BackEnd
         public bool AnularVenta(int idVenta)
         {
             bool ventaSuspendida = false;
-            string query = "UPDATE Ventas SET Estado = 'Suspendida' WHERE id_venta = @idVenta AND Estado = 'Completada'";
-
-            try
+            using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                SqlTransaction transaction = null;
+
+                try
                 {
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@idVenta", idVenta);
-
                     conn.Open();
-                    int rowsAffected = cmd.ExecuteNonQuery();
+                    transaction = conn.BeginTransaction();
 
-                    // Si se actualizó la venta correctamente
-                    if (rowsAffected > 0)
+                    // 1. Cambiar el estado de la venta a 'Suspendida'
+                    string queryAnularVenta = "UPDATE Ventas SET Estado = 'Suspendida' WHERE id_venta = @idVenta AND Estado = 'Completada'";
+                    SqlCommand cmdAnularVenta = new SqlCommand(queryAnularVenta, conn, transaction);
+                    cmdAnularVenta.Parameters.AddWithValue("@idVenta", idVenta);
+                    int rowsAffected = cmdAnularVenta.ExecuteNonQuery();
+
+                    if (rowsAffected == 0)
                     {
-                        ventaSuspendida = true;
+                        // No se encontró la venta o ya estaba suspendida
+                        transaction.Rollback();
+                        return false;
                     }
+
+                    // 2. Obtener los productos y cantidades de la venta
+                    string queryObtenerProductos = "SELECT id_producto, cantidad FROM DetallesVenta WHERE id_venta = @idVenta";
+                    SqlCommand cmdObtenerProductos = new SqlCommand(queryObtenerProductos, conn, transaction);
+                    cmdObtenerProductos.Parameters.AddWithValue("@idVenta", idVenta);
+
+                    List<(int idProducto, int cantidad)> productos = new List<(int, int)>();
+                    using (SqlDataReader reader = cmdObtenerProductos.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            productos.Add((reader.GetInt32(0), reader.GetInt32(1)));
+                        }
+                    }
+
+                    // 3. Devolver el stock a los productos
+                    foreach (var (idProducto, cantidad) in productos)
+                    {
+                        string queryActualizarStock = "UPDATE Productos SET stock = stock + @cantidad WHERE id_producto = @idProducto";
+                        SqlCommand cmdActualizarStock = new SqlCommand(queryActualizarStock, conn, transaction);
+                        cmdActualizarStock.Parameters.AddWithValue("@cantidad", cantidad);
+                        cmdActualizarStock.Parameters.AddWithValue("@idProducto", idProducto);
+                        cmdActualizarStock.ExecuteNonQuery();
+                    }
+
+                    // 4. Si todo salió bien, hacer commit
+                    transaction.Commit();
+                    ventaSuspendida = true;
                 }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error al anular la venta: " + ex.Message);
+                catch (Exception ex)
+                {
+                    transaction?.Rollback();
+                    throw new Exception("Error al anular la venta: " + ex.Message);
+                }
             }
 
             return ventaSuspendida;
         }
 
-        public void DevolverStock(int idDetallesVenta, int idproducto)
-        {
 
-        }
 
         public int EditarProducto(Producto producto, string nombreOriginal)
         {

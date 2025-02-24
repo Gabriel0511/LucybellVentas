@@ -263,7 +263,7 @@
             this.listBoxProductos.FormattingEnabled = true;
             this.listBoxProductos.Location = new System.Drawing.Point(12, 109);
             this.listBoxProductos.Name = "listBoxProductos";
-            this.listBoxProductos.Size = new System.Drawing.Size(684, 95);
+            this.listBoxProductos.Size = new System.Drawing.Size(690, 95);
             this.listBoxProductos.TabIndex = 16;
             this.listBoxProductos.Visible = false;
             this.listBoxProductos.SelectedIndexChanged += new System.EventHandler(this.listBoxProductos_SelectedIndexChanged);

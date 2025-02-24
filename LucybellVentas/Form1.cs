@@ -153,38 +153,57 @@ namespace FrontEnd
         private void btnAnularVenta_Click(object sender, EventArgs e)
         {
             listBoxProductos.Visible = false;
-            // Verificar que se haya seleccionado una venta en el DataGridView
-            if (dgvResumenVentas.SelectedRows.Count > 0)
+
+            // Verificar si hay una fila seleccionada
+            if (dgvResumenVentas.SelectedRows.Count == 0)
             {
-                // Obtener el ID de la venta seleccionada (supongamos que tienes una columna ID_Venta)
-                int idVenta = Convert.ToInt32(dgvResumenVentas.SelectedRows[0].Cells["id_venta"].Value);
+                MessageBox.Show("Por favor, selecciona una venta para anular.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                try
+            // Obtener el ID de la venta seleccionada
+            DataGridViewRow selectedRow = dgvResumenVentas.SelectedRows[0];
+
+            if (!int.TryParse(selectedRow.Cells["id_venta"].Value?.ToString(), out int idVenta))
+            {
+                MessageBox.Show("ID de venta inválido.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            // Verificar si la venta ya está anulada
+            string estadoVenta = selectedRow.Cells["Estado"].Value?.ToString();
+            if (estadoVenta == "Suspendida")
+            {
+                MessageBox.Show("Esta venta ya está anulada.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            try
+            {
+                DatabaseHelper dbHelper = new DatabaseHelper();
+                bool ventaSuspendida = dbHelper.AnularVenta(idVenta);
+
+                if (ventaSuspendida)
                 {
-                    DatabaseHelper dbHelper = new DatabaseHelper();
-                    bool ventaSuspendida = dbHelper.AnularVenta(idVenta);
+                    MessageBox.Show("Venta anulada correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                    // Verificar si la venta fue suspendida correctamente
-                    if (ventaSuspendida)
+                    // Actualizar el estado de la venta en el DataGridView
+                    if (dgvResumenVentas.Columns.Contains("Estado"))
                     {
-                        MessageBox.Show("Venta suspendida correctamente.");
+                        selectedRow.Cells["Estado"].Value = "Suspendida";
+                    }
 
-                        // Opcional: Actualizar la fila en el DataGridView
-                        dgvResumenVentas.SelectedRows[0].Cells["Estado"].Value = "Suspendida";
-                    }
-                    else
-                    {
-                        MessageBox.Show("La venta ya está anulada.");
-                    }
+                    // Opcional: Recargar la DataGridView desde la base de datos
+                    VerVentas();
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show("Error: " + ex.Message);
+                    MessageBox.Show("No se pudo anular la venta. Puede que ya esté suspendida.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                MessageBox.Show("Por favor, selecciona una venta para anular.");
+                MessageBox.Show("Error al anular la venta: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
