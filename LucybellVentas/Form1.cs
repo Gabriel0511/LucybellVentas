@@ -81,7 +81,6 @@ namespace FrontEnd
             listBoxProductos.Visible = true;
         }
 
-        // Manejo de selección en el ListBox
         private void listBoxProductos_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (listBoxProductos.SelectedItem != null)
@@ -231,6 +230,9 @@ namespace FrontEnd
             {
                 MessageBox.Show("Error al anular la venta: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
+            ActualizarInfoProducto();
+
         }
 
         private void btnEditProducto_Click(object sender, EventArgs e)
@@ -667,7 +669,6 @@ namespace FrontEnd
             }
             dgvResumenVentas.ClearSelection();
         }
-
 
         private void dtpFecha_ValueChanged(object sender, EventArgs e)
         {
