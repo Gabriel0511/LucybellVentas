@@ -484,35 +484,38 @@ namespace FrontEnd
 
         public void GenerarReporteVentasDelDia()
         {
-            string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
-            // Obtener la fecha seleccionada en el DateTimePicker
-            string fechaSeleccionada = dtpFecha.Value.ToString("yyyy-MM-dd");
-
-            string query = @"SELECT  V.fecha AS 'Fecha y hora', P.nombre AS Producto, DV.cantidad AS 'Cantidad', DV.precio_unitario AS 'Precio Unitario', DV.total AS 'Subtotal', V.Estado
-            FROM Ventas V
-            INNER JOIN DetallesVenta DV ON V.id_venta = DV.id_venta
-            INNER JOIN Productos P ON DV.id_producto = P.id_producto
-            WHERE CONVERT(date, V.fecha) = @fechaSeleccionada";
-
-            DataTable dt = new DataTable();
-
-            using (SqlConnection con = new SqlConnection(connectionString))
+            if (dgvResumenVentas.Rows.Count == 0)
             {
-                SqlCommand cmd = new SqlCommand(query, con);
-                cmd.Parameters.AddWithValue("@fechaSeleccionada", fechaSeleccionada);
-                SqlDataAdapter da = new SqlDataAdapter(cmd);
-                da.Fill(dt);
+                MessageBox.Show("No hay datos para generar el reporte.", "Reporte de ventas", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
             }
 
-            if (dt.Rows.Count == 0)
+            // Crear DataTable con los datos del DataGridView
+            DataTable dtReporte = new DataTable();
+
+            // Agregar las columnas del DataGridView al DataTable
+            foreach (DataGridViewColumn col in dgvResumenVentas.Columns)
             {
-                MessageBox.Show("No hay ventas registradas para la fecha seleccionada.", "Reporte de ventas", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                dtReporte.Columns.Add(col.HeaderText);
+            }
+
+            // Agregar las filas del DataGridView al DataTable
+            foreach (DataGridViewRow row in dgvResumenVentas.Rows)
+            {
+                if (!row.IsNewRow)
+                {
+                    DataRow dr = dtReporte.NewRow();
+                    for (int i = 0; i < dgvResumenVentas.Columns.Count; i++)
+                    {
+                        dr[i] = row.Cells[i].Value ?? DBNull.Value;
+                    }
+                    dtReporte.Rows.Add(dr);
+                }
             }
 
             // Crear PDF
             Document doc = new Document(PageSize.A4);
-            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Reporte_Ventas_{fechaSeleccionada}.pdf");
+            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Reporte_Ventas_{DateTime.Now.ToString("yyyy-MM-dd")}.pdf");
 
             try
             {
@@ -546,19 +549,19 @@ namespace FrontEnd
 
                 // Agregar título debajo del logo
                 iTextSharp.text.Font titleFont = iTextSharp.text.FontFactory.GetFont(iTextSharp.text.FontFactory.HELVETICA_BOLD, 16);
-                PdfPCell titleCell = new PdfPCell(new Phrase("Reporte de ventas del día \n ", titleFont));
+                PdfPCell titleCell = new PdfPCell(new Phrase("Reporte de Ventas \n ", titleFont));
                 titleCell.Border = iTextSharp.text.Rectangle.NO_BORDER;
                 titleCell.HorizontalAlignment = Element.ALIGN_CENTER; // Centrar título
                 headerTable.AddCell(titleCell);
 
                 doc.Add(headerTable);
 
-                // Tabla con datos
-                PdfPTable table = new PdfPTable(dt.Columns.Count);
+                // Crear tabla para los datos
+                PdfPTable table = new PdfPTable(dtReporte.Columns.Count);
                 table.WidthPercentage = 100;
 
                 // Agregar encabezados
-                foreach (DataColumn col in dt.Columns)
+                foreach (DataColumn col in dtReporte.Columns)
                 {
                     PdfPCell cell = new PdfPCell(new Phrase(col.ColumnName));
                     cell.BackgroundColor = new BaseColor(192, 192, 255); // Violeta clarito
@@ -567,17 +570,17 @@ namespace FrontEnd
                 }
 
                 // Agregar filas de datos
-                foreach (DataRow row in dt.Rows)
+                foreach (DataRow row in dtReporte.Rows)
                 {
                     foreach (var item in row.ItemArray)
                     {
-                        string estado = row["Estado"].ToString();
+                        string estado = row["Estado"].ToString(); // Obtener el estado de la venta
                         PdfPCell cell = new PdfPCell(new Phrase(item.ToString()));
 
                         // Colorear las filas dependiendo del estado
                         if (estado == "Completada")
                         {
-                            cell.BackgroundColor = new BaseColor(255, 239, 184); // Papaya
+                            cell.BackgroundColor = new BaseColor(255, 239, 184); // Color Papaya
                         }
                         else if (estado == "Suspendida")
                         {
