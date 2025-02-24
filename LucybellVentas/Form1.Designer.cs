@@ -48,6 +48,7 @@
             this.btnEliminar = new System.Windows.Forms.Button();
             this.lblTotal = new System.Windows.Forms.Label();
             this.listBoxProductos = new System.Windows.Forms.ListBox();
+            this.btnVerProductos = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.nudCantidad)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResumenVentas)).BeginInit();
             this.SuspendLayout();
@@ -58,7 +59,7 @@
             this.txtNombreProducto.AutoCompleteSource = System.Windows.Forms.AutoCompleteSource.CustomSource;
             this.txtNombreProducto.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtNombreProducto.Location = new System.Drawing.Point(11, 79);
-            this.txtNombreProducto.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.txtNombreProducto.Margin = new System.Windows.Forms.Padding(2);
             this.txtNombreProducto.Name = "txtNombreProducto";
             this.txtNombreProducto.Size = new System.Drawing.Size(691, 29);
             this.txtNombreProducto.TabIndex = 0;
@@ -66,9 +67,10 @@
             // 
             // nudCantidad
             // 
+            this.nudCantidad.Enabled = false;
             this.nudCantidad.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.nudCantidad.Location = new System.Drawing.Point(706, 80);
-            this.nudCantidad.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.nudCantidad.Margin = new System.Windows.Forms.Padding(2);
             this.nudCantidad.Name = "nudCantidad";
             this.nudCantidad.Size = new System.Drawing.Size(103, 29);
             this.nudCantidad.TabIndex = 1;
@@ -92,9 +94,9 @@
             this.lblPrecioUnitario.Location = new System.Drawing.Point(27, 154);
             this.lblPrecioUnitario.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblPrecioUnitario.Name = "lblPrecioUnitario";
-            this.lblPrecioUnitario.Size = new System.Drawing.Size(89, 24);
+            this.lblPrecioUnitario.Size = new System.Drawing.Size(114, 24);
             this.lblPrecioUnitario.TabIndex = 3;
-            this.lblPrecioUnitario.Text = "Precio : 0";
+            this.lblPrecioUnitario.Text = "Precio : 0,00";
             // 
             // lblSubtotal
             // 
@@ -103,15 +105,15 @@
             this.lblSubtotal.Location = new System.Drawing.Point(27, 180);
             this.lblSubtotal.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblSubtotal.Name = "lblSubtotal";
-            this.lblSubtotal.Size = new System.Drawing.Size(102, 24);
+            this.lblSubtotal.Size = new System.Drawing.Size(127, 24);
             this.lblSubtotal.TabIndex = 4;
-            this.lblSubtotal.Text = "Subtotal : 0";
+            this.lblSubtotal.Text = "Subtotal : 0,00";
             // 
             // btnRegistrarVenta
             // 
             this.btnRegistrarVenta.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnRegistrarVenta.Location = new System.Drawing.Point(823, 52);
-            this.btnRegistrarVenta.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnRegistrarVenta.Margin = new System.Windows.Forms.Padding(2);
             this.btnRegistrarVenta.Name = "btnRegistrarVenta";
             this.btnRegistrarVenta.Size = new System.Drawing.Size(95, 73);
             this.btnRegistrarVenta.TabIndex = 5;
@@ -156,7 +158,7 @@
             this.dgvResumenVentas.DefaultCellStyle = dataGridViewCellStyle3;
             this.dgvResumenVentas.EnableHeadersVisualStyles = false;
             this.dgvResumenVentas.Location = new System.Drawing.Point(16, 229);
-            this.dgvResumenVentas.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.dgvResumenVentas.Margin = new System.Windows.Forms.Padding(2);
             this.dgvResumenVentas.Name = "dgvResumenVentas";
             this.dgvResumenVentas.ReadOnly = true;
             this.dgvResumenVentas.RightToLeft = System.Windows.Forms.RightToLeft.No;
@@ -175,6 +177,7 @@
             this.dgvResumenVentas.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvResumenVentas.Size = new System.Drawing.Size(892, 330);
             this.dgvResumenVentas.TabIndex = 6;
+            this.dgvResumenVentas.MouseClick += new System.Windows.Forms.MouseEventHandler(this.dgvResumenVentas_MouseClick);
             // 
             // label1
             // 
@@ -186,12 +189,13 @@
             this.label1.Size = new System.Drawing.Size(359, 44);
             this.label1.TabIndex = 8;
             this.label1.Text = "Registro de Ventas";
+            this.label1.Click += new System.EventHandler(this.label1_Click);
             // 
             // btnAgregar
             // 
             this.btnAgregar.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnAgregar.Location = new System.Drawing.Point(804, 154);
-            this.btnAgregar.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.btnAgregar.Margin = new System.Windows.Forms.Padding(2);
             this.btnAgregar.Name = "btnAgregar";
             this.btnAgregar.Size = new System.Drawing.Size(104, 71);
             this.btnAgregar.TabIndex = 9;
@@ -241,6 +245,7 @@
             this.btnEliminar.TabIndex = 14;
             this.btnEliminar.Text = "Eliminar Producto";
             this.btnEliminar.UseVisualStyleBackColor = true;
+            this.btnEliminar.Click += new System.EventHandler(this.btnEliminar_Click_1);
             // 
             // lblTotal
             // 
@@ -251,16 +256,28 @@
             this.lblTotal.Size = new System.Drawing.Size(68, 24);
             this.lblTotal.TabIndex = 15;
             this.lblTotal.Text = "Total :";
+            this.lblTotal.Click += new System.EventHandler(this.lblTotal_Click);
             // 
             // listBoxProductos
             // 
             this.listBoxProductos.FormattingEnabled = true;
-            this.listBoxProductos.Location = new System.Drawing.Point(16, 113);
+            this.listBoxProductos.Location = new System.Drawing.Point(12, 109);
             this.listBoxProductos.Name = "listBoxProductos";
             this.listBoxProductos.Size = new System.Drawing.Size(684, 95);
             this.listBoxProductos.TabIndex = 16;
             this.listBoxProductos.Visible = false;
             this.listBoxProductos.SelectedIndexChanged += new System.EventHandler(this.listBoxProductos_SelectedIndexChanged);
+            // 
+            // btnVerProductos
+            // 
+            this.btnVerProductos.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnVerProductos.Location = new System.Drawing.Point(12, 42);
+            this.btnVerProductos.Name = "btnVerProductos";
+            this.btnVerProductos.Size = new System.Drawing.Size(159, 32);
+            this.btnVerProductos.TabIndex = 17;
+            this.btnVerProductos.Text = "Ver Productos";
+            this.btnVerProductos.UseVisualStyleBackColor = true;
+            this.btnVerProductos.Click += new System.EventHandler(this.btnVerProductos_Click);
             // 
             // Form1
             // 
@@ -268,6 +285,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.Control;
             this.ClientSize = new System.Drawing.Size(929, 649);
+            this.Controls.Add(this.btnVerProductos);
             this.Controls.Add(this.listBoxProductos);
             this.Controls.Add(this.lblTotal);
             this.Controls.Add(this.btnEliminar);
@@ -285,10 +303,11 @@
             this.Controls.Add(this.txtNombreProducto);
             this.ForeColor = System.Drawing.Color.Black;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.Margin = new System.Windows.Forms.Padding(2);
             this.Name = "Form1";
             this.Text = "LucyBell";
             this.Load += new System.EventHandler(this.Form1_Load);
+            this.Click += new System.EventHandler(this.Form1_Click);
             ((System.ComponentModel.ISupportInitialize)(this.nudCantidad)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvResumenVentas)).EndInit();
             this.ResumeLayout(false);
@@ -313,6 +332,7 @@
         private System.Windows.Forms.Button btnEliminar;
         private System.Windows.Forms.Label lblTotal;
         private System.Windows.Forms.ListBox listBoxProductos;
+        private System.Windows.Forms.Button btnVerProductos;
     }
 }
 

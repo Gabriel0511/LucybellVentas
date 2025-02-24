@@ -14,22 +14,33 @@ using System.IO;
 using System.Reflection;
 using static iTextSharp.text.pdf.XfaForm;
 using System.Drawing;
+using BackEnd;
+using System.Net.Http;
 
 
 namespace FrontEnd
 {
     public partial class Form1 : Form
     {
-        private List<Producto> productos = new List<Producto>();
-        private List<Venta> ventas = new List<Venta>();
+        private DatabaseHelper dbHelper = new DatabaseHelper();
         private int idProductoSeleccionado = -1;
 
-        SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;");
+        public string TextoNombre
+        {
+            get { return txtNombreProducto.Text; }
+            set { txtNombreProducto.Text = value; }
+        }
+
+        public ListBox ListBoxProductos
+        {
+            get { return listBoxProductos; }
+        }
 
         public Form1()
         {
             InitializeComponent();
             VerVentas();
+            
             dgvResumenVentas.CellFormatting += new DataGridViewCellFormattingEventHandler(dgvResumenVentas_CellFormatting);
             this.Shown += (s, e) => txtNombreProducto.Focus();
         }
@@ -37,28 +48,49 @@ namespace FrontEnd
         private void Form1_Load(object sender, EventArgs e)
         {
             dgvResumenVentas.CellValueChanged += dgvResumenVentas_CellValueChanged;
+            // Desactivar la selección automática
+            dgvResumenVentas.ClearSelection();
 
         }
 
-        #region TextBox
+        #region Controles
 
         private void nudCantidad_ValueChanged(object sender, EventArgs e)
         {
             CalcularSubtotal();
         }
+
         private void txtNombreProducto_TextChanged(object sender, EventArgs e)
         {
-            // Mostrar u ocultar el ListBox según si hay texto en el TextBox
+            // Si el TextBox está vacío, oculta el ListBox
             if (string.IsNullOrWhiteSpace(txtNombreProducto.Text))
             {
                 listBoxProductos.Visible = false;
+                return;
             }
-            else
+
+            // Si no es un nombre exacto, mostrar el ListBox con autocompletado
+            CargarAutocompletado(txtNombreProducto.Text);
+            listBoxProductos.Visible = true;
+        }
+
+        // Manejo de selección en el ListBox
+        private void listBoxProductos_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listBoxProductos.SelectedItem != null)
             {
-                CargarAutocompletado(txtNombreProducto.Text);
-                listBoxProductos.Visible = true;
+                // Deshabilitar temporalmente el evento para evitar que se dispare nuevamente
+                txtNombreProducto.TextChanged -= txtNombreProducto_TextChanged;
+
+                txtNombreProducto.Text = listBoxProductos.SelectedItem.ToString();
+                listBoxProductos.Visible = false;
+
+                // Reactivar el evento después de la actualización
+                txtNombreProducto.TextChanged += txtNombreProducto_TextChanged;
+
+                // Ahora sí actualizar la información del producto
+                ActualizarInfoProducto();
             }
-            ActualizarInfoProducto();
         }
 
         #endregion
@@ -67,87 +99,87 @@ namespace FrontEnd
 
         private void btnRegistrarVenta_Click(object sender, EventArgs e)
         {
-            if(nudCantidad.Value != 0)
-            {
-                DatabaseHelper db = new DatabaseHelper();
-                db.RegistrarVenta(txtNombreProducto.Text, Convert.ToInt32(nudCantidad.Text));
+            listBoxProductos.Visible = false;
+            dgvResumenVentas.ClearSelection();
 
-                VerVentas();
+            string nombreProducto = txtNombreProducto.Text;
+            int cantidad = int.Parse(nudCantidad.Text);
 
-                //limpiar textbox
-                txtNombreProducto.Clear();
-                nudCantidad.Value = 0;
-            }
-            else
+            try
             {
-                MessageBox.Show("La cantidad vendida no puede ser cero.");
+                if (nudCantidad.Value != 0 && txtNombreProducto.Text != "")
+                {
+                    dbHelper.RegistrarVenta(nombreProducto, cantidad);
+                    
+                    VerVentas();
+
+                    //limpiar textbox
+                    txtNombreProducto.Clear();
+                    nudCantidad.Value = 0;
+                    nudCantidad.Enabled = false;
+                    lblPrecioUnitario.Text = "Precio : 0,00";
+                    lblStockDisponible.Text = "Stock : 0";
+
+                    MessageBox.Show("Venta registrada correctamente.");
+                }
+                else
+                {
+                    MessageBox.Show("Todos los campos son obligatorios.");
+                }
             }
-               
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void btnAgregar_Click(object sender, EventArgs e)
         {
+            listBoxProductos.Visible = false;
+            dgvResumenVentas.ClearSelection();
+
             FormAgregarProducto formAgregar = new FormAgregarProducto();
             formAgregar.ShowDialog();
         }
 
         private void btnGenerarReporte_Click(object sender, EventArgs e)
         {
+            listBoxProductos.Visible = false;
+            dgvResumenVentas.ClearSelection();
+
             GenerarReporteVentasDelDia();
         }
 
-        private void BtnEditProducto_Click(object sender, EventArgs e)
-        {
-            string nombreProducto = txtNombreProducto.Text;
-            if (string.IsNullOrWhiteSpace(nombreProducto))
-            {
-                MessageBox.Show("Ingrese el nombre del producto a editar.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            FormEditarProducto formEditar = new FormEditarProducto(nombreProducto);
-            formEditar.ShowDialog();
-        }
         private void btnAnularVenta_Click(object sender, EventArgs e)
         {
+            listBoxProductos.Visible = false;
             // Verificar que se haya seleccionado una venta en el DataGridView
             if (dgvResumenVentas.SelectedRows.Count > 0)
             {
                 // Obtener el ID de la venta seleccionada (supongamos que tienes una columna ID_Venta)
                 int idVenta = Convert.ToInt32(dgvResumenVentas.SelectedRows[0].Cells["id_venta"].Value);
 
-                // Definir la consulta SQL para actualizar el estado de la venta
-                string query = "UPDATE Ventas SET Estado = 'Suspendida' WHERE id_venta = @idVenta AND Estado = 'Completada'";
-
-                // Ejecutar la consulta SQL (asegurándote de usar parámetros para evitar inyección SQL)
-                using (SqlConnection conn = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
+                try
                 {
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@idVenta", idVenta);
+                    DatabaseHelper dbHelper = new DatabaseHelper();
+                    bool ventaSuspendida = dbHelper.AnularVenta(idVenta);
 
-                    try
+                    // Verificar si la venta fue suspendida correctamente
+                    if (ventaSuspendida)
                     {
-                        conn.Open();
-                        int rowsAffected = cmd.ExecuteNonQuery();
+                        MessageBox.Show("Venta suspendida correctamente.");
 
-                        // Verificar si se actualizó correctamente
-                        if (rowsAffected > 0)
-                        {
-                            MessageBox.Show("Venta suspendida correctamente.");
-
-                            // Opcional: Actualizar el DataGridView si es necesario
-                            // Actualizar la fila en el DataGridView
-                            dgvResumenVentas.SelectedRows[0].Cells["Estado"].Value = "Suspendida";
-                        }
-                        else
-                        {
-                            MessageBox.Show("La venta ya está anulada.");
-                        }
+                        // Opcional: Actualizar la fila en el DataGridView
+                        dgvResumenVentas.SelectedRows[0].Cells["Estado"].Value = "Suspendida";
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        MessageBox.Show("Error: " + ex.Message);
+                        MessageBox.Show("La venta ya está anulada.");
                     }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Error: " + ex.Message);
                 }
             }
             else
@@ -158,6 +190,9 @@ namespace FrontEnd
 
         private void btnEditProducto_Click(object sender, EventArgs e)
         {
+            listBoxProductos.Visible = false;
+            dgvResumenVentas.ClearSelection();
+
             string nombreProducto = txtNombreProducto.Text;
             if (string.IsNullOrWhiteSpace(nombreProducto))
             {
@@ -169,13 +204,52 @@ namespace FrontEnd
             formEditar.ShowDialog();
 
             ActualizarInfoProducto();
-
-            txtNombreProducto.Text = "";
         }
 
-        private void btnEliminar_Click(object sender, EventArgs e)
+        private void btnEliminar_Click_1(object sender, EventArgs e)
         {
-            EliminarProducto();
+            dgvResumenVentas.ClearSelection();
+            listBoxProductos.Visible = false;
+
+            Producto producto = dbHelper.ObtenerInfoProducto(txtNombreProducto.Text);
+
+            int idProducto = producto.id_producto;
+
+            bool productoEliminado = dbHelper.EliminarProducto(idProducto);
+
+            if (productoEliminado)
+            {
+                MessageBox.Show("Producto eliminado correctamente.");
+            }
+            else
+            {
+                MessageBox.Show("No se pudo eliminar el producto.");
+            }
+
+        }
+
+        private void btnVerProductos_Click(object sender, EventArgs e)
+        {
+            dgvResumenVentas.ClearSelection();
+            if (listBoxProductos.Visible)
+            {
+                listBoxProductos.Visible = false;
+            }
+            else
+            {
+                // Limpiar el ListBox antes de cargar nuevos datos
+                listBoxProductos.Items.Clear();
+                listBoxProductos.Visible = true;
+
+                // Llamar al backend para obtener los productos filtrados
+                List<string> productos = dbHelper.VerProductos();
+
+                // Agregar los productos al ListBox
+                foreach (string producto in productos)
+                {
+                    listBoxProductos.Items.Add(producto);
+                }
+            }         
         }
 
         #endregion
@@ -186,35 +260,23 @@ namespace FrontEnd
         {
             try
             {
-                using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
-                {
-                    con.Open();
-                    DataTable dt = new DataTable();
-                    using (SqlDataAdapter adapt = new SqlDataAdapter(
-                         "SELECT p.nombre AS 'Producto', p.precio AS 'Precio Unitario', " +
-                        "dv.cantidad AS 'Cantidad', dv.total AS 'Subtotal', v.Estado, v.id_venta " +
-                        "FROM Productos p " +
-                        "JOIN DetallesVenta dv ON p.id_producto = dv.id_producto " +
-                        "JOIN Ventas v ON dv.id_venta = v.id_venta " +
-                        "WHERE CAST(v.fecha AS DATE) = CAST(GETDATE() AS DATE);", con))
-                    {
-                        adapt.Fill(dt);
-                    }
-                    dgvResumenVentas.DataSource = dt;
+                DatabaseHelper dbHelper = new DatabaseHelper();
+                DataTable ventasDelDia = dbHelper.ObtenerVentasDelDia();
 
-                    // Ocultar la columna id_venta
-                    dgvResumenVentas.Columns["id_venta"].Visible = false;
+                dgvResumenVentas.DataSource = ventasDelDia;
 
-                    // Llamar a CalcularTotal con los datos cargados
-                    CalcularTotal(dt);
-                }
+                // Ocultar la columna id_venta
+                dgvResumenVentas.Columns["id_venta"].Visible = false;
+
+                // Llamar a CalcularTotal con los datos cargados
+                CalcularTotal(ventasDelDia);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al cargar las ventas: " + ex.Message);
             }
+            dgvResumenVentas.ClearSelection();
         }
-
 
         private void CalcularTotal(DataTable dt)
         {
@@ -230,54 +292,43 @@ namespace FrontEnd
             lblTotal.Text = "Total: $" + total.ToString("0.00");
         }
 
-
         private void ActualizarInfoProducto()
         {
             try
             {
-                con.Open();
-                string query = "SELECT id_producto, nombre, precio, stock FROM productos WHERE nombre = @nombre";
+                // Llamamos al backend para obtener la información del producto
+                DatabaseHelper dbHelper = new DatabaseHelper();
+                Producto producto = dbHelper.ObtenerInfoProducto(txtNombreProducto.Text);
 
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                if (producto != null)
                 {
-                    cmd.Parameters.AddWithValue("@nombre", txtNombreProducto.Text);
+                    idProductoSeleccionado = producto.id_producto;
+                    lblStockDisponible.Text = "Stock : " + producto.stock.ToString();
+                    lblPrecioUnitario.Text = "Precio : " + producto.precio.ToString();
+                    nudCantidad.Enabled = (producto.stock > 0);
 
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    if (producto.stock == 0)
                     {
-                        if (reader.Read())
-                        {
-                            idProductoSeleccionado = Convert.ToInt32(reader["id_producto"]);
-                            lblStockDisponible.Text = "Stock : " + reader["stock"].ToString();
-                            lblPrecioUnitario.Text = "Precio : " + reader["precio"].ToString();
-                            nudCantidad.Enabled = (Convert.ToInt32(reader["stock"]) > 0);
-                            if (lblStockDisponible.Text == "Stock : 0")
-                            {
-                                nudCantidad.Value = 0;
-                            }
-                            else
-                            {
-                                nudCantidad.Value = 1;
-                            }
-                        }
-                        else
-                        {
-                            idProductoSeleccionado = -1; // Si no encuentra el producto
-                            lblStockDisponible.Text = "Stock : 0";
-                            lblPrecioUnitario.Text = "Precio : 0";
-                            lblSubtotal.Text = "Subtotal : 0"; 
-                            nudCantidad.Enabled = false;
-                            nudCantidad.Value = 0;
-                        }
+                        nudCantidad.Value = 0;
                     }
+                    else
+                    {
+                        nudCantidad.Value = 1;
+                    }
+                }
+                else
+                {
+                    idProductoSeleccionado = -1; // Si no encuentra el producto
+                    lblStockDisponible.Text = "Stock : 0";
+                    lblPrecioUnitario.Text = "Precio : 0";
+                    lblSubtotal.Text = "Subtotal : 0";
+                    nudCantidad.Enabled = false;
+                    nudCantidad.Value = 0;
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al actualizar la información del producto: " + ex.Message);
-            }
-            finally
-            {
-                con.Close();
             }
         }
 
@@ -288,24 +339,14 @@ namespace FrontEnd
                 // Limpiar el ListBox antes de cargar nuevos datos
                 listBoxProductos.Items.Clear();
 
-                using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
-                {
-                    con.Open();
-                    // Filtrar productos que coincidan con el texto ingresado
-                    string query = "SELECT nombre FROM productos WHERE nombre LIKE @filtro";
-                    using (SqlCommand cmd = new SqlCommand(query, con))
-                    {
-                        cmd.Parameters.AddWithValue("@filtro", $"%{filtro}%"); // Usar % para buscar coincidencias parciales
+                // Llamar al backend para obtener los productos filtrados
+                DatabaseHelper dbHelper = new DatabaseHelper();
+                List<string> productos = dbHelper.BuscarProductos(filtro);
 
-                        using (SqlDataReader reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                // Agregar cada producto al ListBox
-                                listBoxProductos.Items.Add(reader["nombre"].ToString());
-                            }
-                        }
-                    }
+                // Agregar los productos al ListBox
+                foreach (string producto in productos)
+                {
+                    listBoxProductos.Items.Add(producto);
                 }
 
                 // Mostrar el ListBox si hay resultados
@@ -474,9 +515,6 @@ namespace FrontEnd
             }
         }
 
-
-
-
         private void dgvResumenVentas_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             // Verificamos que la columna editada sea la de Estado
@@ -511,173 +549,34 @@ namespace FrontEnd
             }
         }
 
-        private void EliminarProducto()
+        #endregion
+
+        #region Clicks
+
+        private void Form1_Click(object sender, EventArgs e)
         {
-            if (idProductoSeleccionado == -1)
-            {
-                MessageBox.Show("Seleccione un producto válido para eliminar.");
-                return;
-            }
+            listBoxProductos.Visible = false;
+            dgvResumenVentas.ClearSelection();
+        }
 
-            DialogResult result = MessageBox.Show("¿Está seguro de que desea eliminar este producto?",
-                                                  "Confirmar eliminación",
-                                                  MessageBoxButtons.YesNo,
-                                                  MessageBoxIcon.Warning);
+        private void dgvResumenVentas_MouseClick(object sender, MouseEventArgs e)
+        {
+            listBoxProductos.Visible = false;
+        }
 
-            if (result == DialogResult.Yes)
-            {
-                try
-                {
-                    using (SqlConnection con = new SqlConnection("Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;"))
-                    {
-                        con.Open();
+        private void label1_Click(object sender, EventArgs e)
+        {
+            listBoxProductos.Visible = false;
+            dgvResumenVentas.ClearSelection();
+        }
 
-                        // Eliminar el producto (sin afectar las ventas)
-                        string queryEliminarProducto = "DELETE FROM productos WHERE id_producto = @id";
-                        using (SqlCommand cmdProducto = new SqlCommand(queryEliminarProducto, con))
-                        {
-                            cmdProducto.Parameters.AddWithValue("@id", idProductoSeleccionado);
-                            int rowsAffected = cmdProducto.ExecuteNonQuery();
-
-                            if (rowsAffected > 0)
-                            {
-                                MessageBox.Show("Producto eliminado correctamente.");
-                                txtNombreProducto.Clear();
-                                VerVentas(); // Actualizar lista después de eliminar
-                            }
-                            else
-                            {
-                                MessageBox.Show("No se encontró el producto para eliminar.");
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error al eliminar el producto: " + ex.Message);
-                }
-            }
+        private void lblTotal_Click(object sender, EventArgs e)
+        {
+            listBoxProductos.Visible = false;
+            dgvResumenVentas.ClearSelection();
         }
 
         #endregion
 
-        #region SQL Conexion y Funciones
-        public class DatabaseHelper
-        {
-            public string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
-
-            public void AgregarProducto(string nombre, decimal precio, int stock)
-            {
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    string query = "INSERT INTO Productos (nombre, precio, stock) VALUES (@nombre, @precio, @stock)";
-
-                    SqlCommand cmd = new SqlCommand(query, con);
-                    cmd.Parameters.AddWithValue("@nombre", nombre);
-                    cmd.Parameters.AddWithValue("@precio", precio);
-                    cmd.Parameters.AddWithValue("@stock", stock);
-
-                    con.Open();
-                    cmd.ExecuteNonQuery();
-                    con.Close();
-
-                    MessageBox.Show("Producto agregado correctamente.");
-                }
-            }
-
-            public void RegistrarVenta(string nombreProducto, int cantidad)
-            {
-                using (SqlConnection con = new SqlConnection(connectionString))
-                {
-                    con.Open();
-                    SqlTransaction transaction = con.BeginTransaction();
-
-                    try
-                    {
-                        // Buscar el id_producto con el nombre del producto
-                        string queryProducto = "SELECT id_producto, stock FROM Productos WHERE nombre = @nombreProducto";
-                        SqlCommand cmdProducto = new SqlCommand(queryProducto, con, transaction);
-                        cmdProducto.Parameters.AddWithValue("@nombreProducto", nombreProducto);
-
-                        int idProducto = 0;
-                        int stockDisponible = 0;
-
-                        using (SqlDataReader reader = cmdProducto.ExecuteReader())
-                        {
-                            if (!reader.Read())
-                            {
-                                MessageBox.Show("Producto no encontrado.");
-                                return;
-                            }
-
-                            idProducto = reader.GetInt32(0);
-                            stockDisponible = reader.GetInt32(1);
-                        } // **Aquí se cierra automáticamente el DataReader**
-
-                        // Verificar si hay suficiente stock
-                        if (stockDisponible == 0)
-                        {
-                            MessageBox.Show("Error: No hay stock disponible para este producto.", "Stock agotado", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
-                        if (stockDisponible < cantidad)
-                        {
-                            MessageBox.Show($"Error: Stock insuficiente. Solo hay {stockDisponible} unidades disponibles.", "Stock insuficiente", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                            return;
-                        }
-
-                        // Crear la venta
-                        string queryVenta = "INSERT INTO Ventas DEFAULT VALUES; SELECT SCOPE_IDENTITY();";
-                        SqlCommand cmdVenta = new SqlCommand(queryVenta, con, transaction);
-                        int idVenta = Convert.ToInt32(cmdVenta.ExecuteScalar());
-
-                        // Obtener el precio del producto
-                        string queryPrecio = "SELECT precio FROM Productos WHERE id_producto = @idProducto";
-                        SqlCommand cmdPrecio = new SqlCommand(queryPrecio, con, transaction);
-                        cmdPrecio.Parameters.AddWithValue("@idProducto", idProducto);
-                        decimal precio = Convert.ToDecimal(cmdPrecio.ExecuteScalar());
-
-                        // Insertar detalle de la venta
-                        string queryDetalle = "INSERT INTO DetallesVenta (id_venta, id_producto, cantidad, precio_unitario, total) VALUES (@idVenta, @idProducto, @cantidad, @precioUnitario, @total)";
-                        SqlCommand cmdDetalle = new SqlCommand(queryDetalle, con, transaction);
-                        cmdDetalle.Parameters.AddWithValue("@idVenta", idVenta);
-                        cmdDetalle.Parameters.AddWithValue("@idProducto", idProducto);
-                        cmdDetalle.Parameters.AddWithValue("@cantidad", cantidad);
-                        cmdDetalle.Parameters.AddWithValue("@precioUnitario", precio);
-                        cmdDetalle.Parameters.AddWithValue("@total", cantidad * precio);
-                        cmdDetalle.ExecuteNonQuery();
-
-                        // Reducir stock
-                        string queryStock = "UPDATE Productos SET stock = stock - @cantidad WHERE id_producto = @idProducto";
-                        SqlCommand cmdStock = new SqlCommand(queryStock, con, transaction);
-                        cmdStock.Parameters.AddWithValue("@cantidad", cantidad);
-                        cmdStock.Parameters.AddWithValue("@idProducto", idProducto);
-                        cmdStock.ExecuteNonQuery();
-
-                        // Confirmar transacción
-                        transaction.Commit();
-                        MessageBox.Show("Venta registrada correctamente.");
-                    }
-                    catch (Exception ex)
-                    {
-                        transaction.Rollback();
-                        MessageBox.Show("Error al registrar la venta: " + ex.Message);
-                    }
-                }
-            }
-
-        }
-
-        #endregion
-
-        private void listBoxProductos_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            // Cuando el usuario selecciona un producto del ListBox, colocarlo en el TextBox
-            if (listBoxProductos.SelectedItem != null)
-            {
-                txtNombreProducto.Text = listBoxProductos.SelectedItem.ToString();
-                listBoxProductos.Visible = false; // Ocultar el ListBox después de seleccionar
-            }
-        }
     }
 }

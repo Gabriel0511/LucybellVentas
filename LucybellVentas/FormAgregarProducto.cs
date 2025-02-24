@@ -9,11 +9,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
+using BackEnd;
+using BackEnd.Modelos;
 
 namespace LucybellVentas
 {
     public partial class FormAgregarProducto : Form
     {
+        private DatabaseHelper dbHelper = new DatabaseHelper();
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern int SendMessage(IntPtr hWndn, int msg, int wParam, string lParam);
         private const int EM_SETCUEBANNER = 0x1501;
@@ -30,49 +33,56 @@ namespace LucybellVentas
 
         private void btnGuardar_Click(object sender, EventArgs e)
         {
-            string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
+            string nombreProducto = txtNombre.Text.Trim();
+            string precioProducto = txtPrecio.Text.Trim();
+            string stockProducto = txtStock.Text.Trim();
 
             // Validar que los campos no estén vacíos
-            if (string.IsNullOrWhiteSpace(txtNombre.Text) || string.IsNullOrWhiteSpace(txtPrecio.Text) || string.IsNullOrWhiteSpace(txtStock.Text))
+            if (string.IsNullOrWhiteSpace(nombreProducto) || string.IsNullOrWhiteSpace(precioProducto) || string.IsNullOrWhiteSpace(stockProducto))
             {
                 MessageBox.Show("Todos los campos son obligatorios.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            using (SqlConnection con = new SqlConnection(connectionString))
+            // Verificar si el producto ya existe
+            if (dbHelper.VerifProducto(nombreProducto))
             {
-                try
+                MessageBox.Show("El producto ya existe en la base de datos.", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                // Convertir los valores ingresados
+                if (!decimal.TryParse(precioProducto, out decimal precio) || !int.TryParse(stockProducto, out int stock))
                 {
-                    con.Open();
-
-                    // Verificar si el producto ya existe
-                    string checkQuery = "SELECT COUNT(*) FROM Productos WHERE nombre = @nombre";
-                    SqlCommand checkCmd = new SqlCommand(checkQuery, con);
-                    checkCmd.Parameters.AddWithValue("@nombre", txtNombre.Text);
-                    int count = (int)checkCmd.ExecuteScalar();
-
-                    if (count > 0)
-                    {
-                        MessageBox.Show("Ya existe un producto con este nombre.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
-
-                    // Insertar nuevo producto
-                    string insertQuery = "INSERT INTO Productos (nombre, precio, stock) VALUES (@nombre, @precio, @stock)";
-                    SqlCommand insertCmd = new SqlCommand(insertQuery, con);
-                    insertCmd.Parameters.AddWithValue("@nombre", txtNombre.Text);
-                    insertCmd.Parameters.AddWithValue("@precio", Convert.ToDecimal(txtPrecio.Text));
-                    insertCmd.Parameters.AddWithValue("@stock", Convert.ToInt32(txtStock.Text));
-
-                    insertCmd.ExecuteNonQuery();
-                    MessageBox.Show("Producto agregado correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    this.Close();
+                    MessageBox.Show("El precio y el stock deben ser valores numéricos válidos.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
                 }
-                catch (Exception ex)
+
+                // Crear el producto con los valores ingresados
+                Producto producto = new Producto
                 {
-                    MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                    nombre = nombreProducto,
+                    precio = precio,
+                    stock = stock
+                };
+
+                // Agregar el producto a la base de datos
+                dbHelper.AgregarProducto(producto);
+
+                MessageBox.Show("Producto agregado correctamente.", "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // Limpiar los campos después de guardar
+                txtNombre.Clear();
+                txtPrecio.Clear();
+                txtStock.Clear();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
     }
 }
