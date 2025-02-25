@@ -298,9 +298,9 @@
             this.lblFiltro.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblFiltro.Location = new System.Drawing.Point(248, 203);
             this.lblFiltro.Name = "lblFiltro";
-            this.lblFiltro.Size = new System.Drawing.Size(101, 16);
+            this.lblFiltro.Size = new System.Drawing.Size(105, 16);
             this.lblFiltro.TabIndex = 19;
-            this.lblFiltro.Text = "Filtro por fecha :";
+            this.lblFiltro.Text = "Filtrar por fecha :";
             // 
             // btnVerTodas
             // 

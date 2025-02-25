@@ -45,10 +45,10 @@ namespace FrontEnd
             this.Shown += (s, e) => txtNombreProducto.Focus();
 
             // Manejar el evento cuando cambia la fecha
-            dtpFecha.ValueChanged += dtpFecha_ValueChanged;
+            dtpFecha.ValueChanged += dtpFecha_ValueChanged_1;
 
             // Configurar el formato personalizado al principio
-            dtpFecha.CustomFormat = " ";  // Texto para indicar que no se ha seleccionado una fecha
+            dtpFecha.CustomFormat = "dd/MM/yyyy";
             dtpFecha.Format = DateTimePickerFormat.Custom; // Usar formato personalizado
         }
 
@@ -104,23 +104,20 @@ namespace FrontEnd
 
             listBoxProductos.Visible = false;
             dgvResumenVentas.ClearSelection();
+            
+            // Si hay una fecha seleccionada, mostrarla en formato de fecha normal
+            dtpFecha.CustomFormat = "dd/MM/yyyy"; // Formato normal de fecha
 
-            // Si se selecciona una fecha diferente de la fecha mínima (es decir, si se seleccionó una fecha válida)
-            if (dtpFecha.Value != DateTimePicker.MinimumDateTime)
-            {
-                // Si hay una fecha seleccionada, mostrarla en formato de fecha normal
-                dtpFecha.CustomFormat = "dd/MM/yyyy"; // Formato normal de fecha
-            }
-            else
-            {
-                // Si no se ha seleccionado fecha, mostrar el texto personalizado
-                dtpFecha.CustomFormat = " ";  // Indicar que no se ha seleccionado fecha
-            }
+            VerVentasPorFecha(dtpFecha.Value);
 
-            VerVentas();
+            // Ocultar la columna id_venta
+            dgvResumenVentas.Columns["id_venta"].Visible = false;
+
         }
 
+
         #endregion
+
 
         #region Botones
 
@@ -220,8 +217,6 @@ namespace FrontEnd
                         selectedRow.Cells["Estado"].Value = "Suspendida";
                     }
 
-                    // Opcional: Recargar la DataGridView desde la base de datos
-                    VerVentas();
                 }
                 else
                 {
@@ -345,10 +340,11 @@ namespace FrontEnd
             dgvResumenVentas.DataSource = ventas;
 
             dgvResumenVentas.ClearSelection();
-            VerVentas();
+            dtpFecha.CustomFormat = "TODAS";  // Texto para indicar que no se ha seleccionado una fecha
         }
 
         #endregion
+
 
         #region Metodos
 
@@ -401,6 +397,7 @@ namespace FrontEnd
                     idProductoSeleccionado = producto.id_producto;
                     lblStockDisponible.Text = "Stock : " + producto.stock.ToString();
                     lblPrecioUnitario.Text = "Precio : " + producto.precio.ToString();
+                    CalcularSubtotal();
                     nudCantidad.Enabled = (producto.stock > 0);
 
                     if (producto.stock == 0)
@@ -659,12 +656,6 @@ namespace FrontEnd
 
                 dgvResumenVentas.DataSource = ventasPorFecha;
 
-                // Ocultar la columna id_venta si existe
-                if (dgvResumenVentas.Columns.Contains("id_venta"))
-                {
-                    dgvResumenVentas.Columns["id_venta"].Visible = false;
-                }
-
                 // Calcular el total solo con los datos de la fecha seleccionada
                 CalcularTotal(ventasPorFecha);
             }
@@ -675,10 +666,6 @@ namespace FrontEnd
             dgvResumenVentas.ClearSelection();
         }
 
-        private void dtpFecha_ValueChanged(object sender, EventArgs e)
-        {
-            VerVentasPorFecha(dtpFecha.Value);
-        }
 
         #endregion
 

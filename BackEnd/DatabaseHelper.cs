@@ -230,11 +230,12 @@ namespace BackEnd
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
-                    string query = "SELECT v.Fecha AS 'Fecha y hora', p.nombre AS 'Producto', p.precio AS 'Precio Unitario', " +
+                    string query = "SELECT v.Fecha AS 'Fecha y hora', p.nombre AS 'Producto', dv.precio_unitario AS 'Precio Unitario', " +
                                    "dv.cantidad AS 'Cantidad', dv.total AS 'Subtotal', v.Estado, v.id_venta " +
                                    "FROM Productos p " +
                                    "JOIN DetallesVenta dv ON p.id_producto = dv.id_producto " +
-                                   "JOIN Ventas v ON dv.id_venta = v.id_venta";
+                                   "JOIN Ventas v ON dv.id_venta = v.id_venta " +
+                                   "WHERE CAST(v.Fecha AS DATE) = CAST(GETDATE() AS DATE)";
 
                     using (SqlDataAdapter adapt = new SqlDataAdapter(query, con))
                     {
@@ -339,7 +340,7 @@ namespace BackEnd
         public DataTable ObtenerVentasPorFecha(DateTime fecha)
         {
             string connectionString = "Server=(localdb)\\MSSQLLocalDB;Database=LucyBell;Integrated Security=True;";
-            string query = @"SELECT V.fecha AS 'Fecha y hora', P.nombre AS Producto, DV.cantidad AS 'Cantidad', DV.precio_unitario AS 'Precio Unitario', DV.total AS 'Subtotal', V.Estado
+            string query = @"SELECT DV.id_venta, V.fecha AS 'Fecha y hora', P.nombre AS Producto, DV.cantidad AS 'Cantidad', DV.precio_unitario AS 'Precio Unitario', DV.total AS 'Subtotal', V.Estado
                      FROM Ventas V
                      INNER JOIN DetallesVenta DV ON V.id_venta = DV.id_venta
                      INNER JOIN Productos P ON DV.id_producto = P.id_producto
