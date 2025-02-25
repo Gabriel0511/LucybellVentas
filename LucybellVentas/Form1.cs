@@ -116,6 +116,8 @@ namespace FrontEnd
                 // Si no se ha seleccionado fecha, mostrar el texto personalizado
                 dtpFecha.CustomFormat = " ";  // Indicar que no se ha seleccionado fecha
             }
+
+            VerVentas();
         }
 
         #endregion
@@ -343,6 +345,7 @@ namespace FrontEnd
             dgvResumenVentas.DataSource = ventas;
 
             dgvResumenVentas.ClearSelection();
+            VerVentas();
         }
 
         #endregion
@@ -612,7 +615,6 @@ namespace FrontEnd
                 MessageBox.Show("Error al generar el reporte: " + ex.Message);
             }
         }
-
 
         private void dgvResumenVentas_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
