@@ -22,6 +22,7 @@ namespace FrontEnd
 {
     public partial class Form1 : Form
     {
+        private Producto ListaProducto = new Producto();
         private DatabaseHelper dbHelper = new DatabaseHelper();
         private int idProductoSeleccionado = -1;
 
@@ -206,7 +207,7 @@ namespace FrontEnd
 
             // Primera confirmación
             DialogResult confirmacion1 = MessageBox.Show(
-                "¿Estás seguro de que quieres anular esta venta?",
+                "¿Estás seguro de que quieres anular esta venta?\nEsta acción es PERMANENTE",
                 "Confirmar eliminación",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning);
@@ -269,7 +270,7 @@ namespace FrontEnd
             dgvResumenVentas.ClearSelection();
             listBoxProductos.Visible = false;
 
-            Producto producto = dbHelper.ObtenerInfoProducto(txtNombreProducto.Text);
+            Producto producto = ListaProducto.ObtenerInfoProducto(txtNombreProducto.Text);
 
             // Verificar si el producto existe antes de continuar
             if (producto == null)
@@ -365,6 +366,7 @@ namespace FrontEnd
             DatabaseHelper dbHelper = new DatabaseHelper();
             DataTable ventas = dbHelper.ObtenerTodasLasVentas();
             dgvResumenVentas.DataSource = ventas;
+            CalcularTotal(ventas);
 
             dgvResumenVentas.ClearSelection();
             dtpFecha.CustomFormat = "TODAS";  // Texto para indicar que no se ha seleccionado una fecha
@@ -417,7 +419,7 @@ namespace FrontEnd
             {
                 // Llamamos al backend para obtener la información del producto
                 DatabaseHelper dbHelper = new DatabaseHelper();
-                Producto producto = dbHelper.ObtenerInfoProducto(txtNombreProducto.Text);
+                Producto producto = ListaProducto.ObtenerInfoProducto(txtNombreProducto.Text);
 
                 if (producto != null)
                 {

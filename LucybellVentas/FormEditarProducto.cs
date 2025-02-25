@@ -16,6 +16,7 @@ namespace LucybellVentas
 {
     public partial class FormEditarProducto : Form
     {
+        private Producto ListaProducto = new Producto();
         private Producto producto;
         private string nombreOriginal;
         private DatabaseHelper dbHelper = new DatabaseHelper();
@@ -29,7 +30,7 @@ namespace LucybellVentas
         public void FormEditarProducto_Load(object sender, EventArgs e)
         {
             // Obtener la información del producto
-            producto = dbHelper.ObtenerInfoProducto(nombreOriginal);
+            producto = ListaProducto.ObtenerInfoProducto(nombreOriginal);
 
             if (producto != null) // Verificamos que el producto exista
             {

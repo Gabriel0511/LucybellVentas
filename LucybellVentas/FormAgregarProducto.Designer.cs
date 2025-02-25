@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormAgregarProducto));
             this.txtNombre = new System.Windows.Forms.TextBox();
             this.txtPrecio = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
@@ -40,20 +41,22 @@
             // 
             // txtNombre
             // 
+            this.txtNombre.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtNombre.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtNombre.Location = new System.Drawing.Point(18, 92);
             this.txtNombre.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtNombre.Name = "txtNombre";
-            this.txtNombre.Size = new System.Drawing.Size(469, 35);
+            this.txtNombre.Size = new System.Drawing.Size(469, 28);
             this.txtNombre.TabIndex = 0;
             // 
             // txtPrecio
             // 
+            this.txtPrecio.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtPrecio.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtPrecio.Location = new System.Drawing.Point(18, 166);
             this.txtPrecio.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtPrecio.Name = "txtPrecio";
-            this.txtPrecio.Size = new System.Drawing.Size(469, 35);
+            this.txtPrecio.Size = new System.Drawing.Size(469, 28);
             this.txtPrecio.TabIndex = 1;
             // 
             // label1
@@ -81,11 +84,12 @@
             // 
             // txtStock
             // 
+            this.txtStock.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtStock.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.txtStock.Location = new System.Drawing.Point(18, 239);
             this.txtStock.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtStock.Name = "txtStock";
-            this.txtStock.Size = new System.Drawing.Size(469, 35);
+            this.txtStock.Size = new System.Drawing.Size(469, 28);
             this.txtStock.TabIndex = 6;
             // 
             // lblNombreP
@@ -129,9 +133,10 @@
             this.Controls.Add(this.txtPrecio);
             this.Controls.Add(this.txtNombre);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "FormAgregarProducto";
-            this.Text = "FormAgregarProducto";
+            this.Text = "LucyBell - Agregar Nuevo Producto";
             this.ResumeLayout(false);
             this.PerformLayout();
 
