@@ -111,7 +111,7 @@ namespace FrontEnd
             VerVentasPorFecha(dtpFecha.Value);
 
             // Ocultar la columna id_venta
-            dgvResumenVentas.Columns["id_venta"].Visible = false;
+             dgvResumenVentas.Columns["id_venta"].Visible = false;
 
         }
 
@@ -125,6 +125,7 @@ namespace FrontEnd
         {
             listBoxProductos.Visible = false;
             dgvResumenVentas.ClearSelection();
+            dtpFecha.Value = DateTime.Now;
 
             string nombreProducto = txtNombreProducto.Text;
             int cantidad = int.Parse(nudCantidad.Text);
@@ -155,6 +156,7 @@ namespace FrontEnd
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+
         }
 
         private void btnAgregar_Click(object sender, EventArgs e)
@@ -200,6 +202,18 @@ namespace FrontEnd
             {
                 MessageBox.Show("Esta venta ya está anulada.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
+            }
+
+            // Primera confirmación
+            DialogResult confirmacion1 = MessageBox.Show(
+                "¿Estás seguro de que quieres anular esta venta?",
+                "Confirmar eliminación",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirmacion1 == DialogResult.No)
+            {
+                return; // Cancelar eliminación
             }
 
             try
@@ -303,8 +317,21 @@ namespace FrontEnd
             }
 
             txtNombreProducto.Clear();
+            lblStockDisponible.Text = "Stock : 0 ";
+            lblPrecioUnitario.Text = "Precio : 0,00 ";
             nudCantidad.Value = 0;
-            VerVentas();
+
+            if (dtpFecha.CustomFormat == "TODAS")
+            {
+                DatabaseHelper dbHelper = new DatabaseHelper();
+                DataTable ventas = dbHelper.ObtenerTodasLasVentas();
+                dgvResumenVentas.DataSource = ventas;
+            }
+            else
+            {
+                VerVentasPorFecha(dtpFecha.Value);
+            }
+
         }
 
         private void btnVerProductos_Click(object sender, EventArgs e)
@@ -493,10 +520,13 @@ namespace FrontEnd
             // Crear DataTable con los datos del DataGridView
             DataTable dtReporte = new DataTable();
 
-            // Agregar las columnas del DataGridView al DataTable
+            // Agregar las columnas del DataGridView al DataTable (excepto "id_venta")
             foreach (DataGridViewColumn col in dgvResumenVentas.Columns)
             {
-                dtReporte.Columns.Add(col.HeaderText);
+                if (col.HeaderText != "id_venta") // Excluir la columna "id_venta"
+                {
+                    dtReporte.Columns.Add(col.HeaderText);
+                }
             }
 
             // Agregar las filas del DataGridView al DataTable
@@ -505,9 +535,15 @@ namespace FrontEnd
                 if (!row.IsNewRow)
                 {
                     DataRow dr = dtReporte.NewRow();
+                    int colIndex = 0;
+
                     for (int i = 0; i < dgvResumenVentas.Columns.Count; i++)
                     {
-                        dr[i] = row.Cells[i].Value ?? DBNull.Value;
+                        if (dgvResumenVentas.Columns[i].HeaderText != "id_venta") // Excluir la columna "id_venta"
+                        {
+                            dr[colIndex] = row.Cells[i].Value ?? DBNull.Value;
+                            colIndex++;
+                        }
                     }
                     dtReporte.Rows.Add(dr);
                 }
@@ -515,7 +551,7 @@ namespace FrontEnd
 
             // Crear PDF
             Document doc = new Document(PageSize.A4);
-            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Reporte_Ventas_{DateTime.Now.ToString("yyyy-MM-dd")}.pdf");
+            string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Reporte_Ventas_{DateTime.Now:yyyy-MM-dd}.pdf");
 
             try
             {
@@ -523,49 +559,46 @@ namespace FrontEnd
                 doc.Open();
 
                 // Crear tabla para logo y título
-                PdfPTable headerTable = new PdfPTable(1); // Una sola columna
+                PdfPTable headerTable = new PdfPTable(1);
                 headerTable.WidthPercentage = 100;
-                headerTable.DefaultCell.Border = iTextSharp.text.Rectangle.NO_BORDER; // Sin bordes en las celdas
+                headerTable.DefaultCell.Border = iTextSharp.text.Rectangle.NO_BORDER;
 
                 // Agregar logo desde recursos incrustados
-                string logoPath = "LucybellVentas.img.epico.jpg"; // Nombre del recurso incrustado
+                string logoPath = "LucybellVentas.img.epico.jpg";
                 var assembly = Assembly.GetExecutingAssembly();
                 using (Stream stream = assembly.GetManifestResourceStream(logoPath))
                 {
                     if (stream != null)
                     {
                         iTextSharp.text.Image logo = iTextSharp.text.Image.GetInstance(stream);
-                        logo.ScaleToFit(100f, 100f); // Redimensiona el logo
-                        PdfPCell logoCell = new PdfPCell(logo);
-                        logoCell.Border = iTextSharp.text.Rectangle.NO_BORDER;
-                        logoCell.HorizontalAlignment = Element.ALIGN_CENTER; // Centrar logo
+                        logo.ScaleToFit(100f, 100f);
+                        PdfPCell logoCell = new PdfPCell(logo) { Border = iTextSharp.text.Rectangle.NO_BORDER, HorizontalAlignment = Element.ALIGN_CENTER };
                         headerTable.AddCell(logoCell);
-                    }
-                    else
-                    {
-                        throw new Exception("No se pudo cargar el logo desde los recursos.");
                     }
                 }
 
-                // Agregar título debajo del logo
-                iTextSharp.text.Font titleFont = iTextSharp.text.FontFactory.GetFont(iTextSharp.text.FontFactory.HELVETICA_BOLD, 16);
-                PdfPCell titleCell = new PdfPCell(new Phrase("Reporte de Ventas \n ", titleFont));
-                titleCell.Border = iTextSharp.text.Rectangle.NO_BORDER;
-                titleCell.HorizontalAlignment = Element.ALIGN_CENTER; // Centrar título
+                // Agregar título
+                iTextSharp.text.Font titleFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 16);
+                PdfPCell titleCell = new PdfPCell(new Phrase("Reporte de Ventas \n ", titleFont))
+                {
+                    Border = iTextSharp.text.Rectangle.NO_BORDER,
+                    HorizontalAlignment = Element.ALIGN_CENTER
+                };
                 headerTable.AddCell(titleCell);
-
                 doc.Add(headerTable);
 
-                // Crear tabla para los datos
+                // Crear tabla para los datos en PDF (sin "id_venta")
                 PdfPTable table = new PdfPTable(dtReporte.Columns.Count);
                 table.WidthPercentage = 100;
 
                 // Agregar encabezados
                 foreach (DataColumn col in dtReporte.Columns)
                 {
-                    PdfPCell cell = new PdfPCell(new Phrase(col.ColumnName));
-                    cell.BackgroundColor = new BaseColor(192, 192, 255); // Violeta clarito
-                    cell.HorizontalAlignment = Element.ALIGN_CENTER;
+                    PdfPCell cell = new PdfPCell(new Phrase(col.ColumnName))
+                    {
+                        BackgroundColor = new BaseColor(192, 192, 255),
+                        HorizontalAlignment = Element.ALIGN_CENTER
+                    };
                     table.AddCell(cell);
                 }
 
@@ -574,44 +607,39 @@ namespace FrontEnd
                 {
                     foreach (var item in row.ItemArray)
                     {
-                        string estado = row["Estado"].ToString(); // Obtener el estado de la venta
                         PdfPCell cell = new PdfPCell(new Phrase(item.ToString()));
+                        string estado = row["Estado"].ToString();
 
-                        // Colorear las filas dependiendo del estado
                         if (estado == "Completada")
                         {
-                            cell.BackgroundColor = new BaseColor(255, 239, 184); // Color Papaya
+                            cell.BackgroundColor = new BaseColor(255, 239, 184);
                         }
                         else if (estado == "Suspendida")
                         {
-                            cell.BackgroundColor = new BaseColor(211, 211, 211); // Gris
+                            cell.BackgroundColor = new BaseColor(211, 211, 211);
                         }
-
                         cell.HorizontalAlignment = Element.ALIGN_CENTER;
                         table.AddCell(cell);
                     }
                 }
-
                 doc.Add(table);
 
-                // Agregar total desde lblTotal.Text al final del PDF
-                string totalVenta = lblTotal.Text; // Obtener el total desde lblTotal
-                iTextSharp.text.Font totalFont = iTextSharp.text.FontFactory.GetFont(iTextSharp.text.FontFactory.HELVETICA_BOLD, 12);
-                Paragraph totalParagraph = new Paragraph(totalVenta, totalFont);
-                totalParagraph.Alignment = Element.ALIGN_RIGHT;
-                totalParagraph.SpacingBefore = 20; // Espacio antes del total
+                // Agregar total
+                string totalVenta = lblTotal.Text;
+                iTextSharp.text.Font totalFont = FontFactory.GetFont(FontFactory.HELVETICA_BOLD, 12);
+                Paragraph totalParagraph = new Paragraph(totalVenta, totalFont) { Alignment = Element.ALIGN_RIGHT, SpacingBefore = 20 };
                 doc.Add(totalParagraph);
 
                 doc.Close();
-
                 MessageBox.Show($"Reporte generado con éxito. \nGuardado en: {filePath}", "Reporte generado", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                System.Diagnostics.Process.Start(filePath); // Abrir automáticamente
+                System.Diagnostics.Process.Start(filePath);
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al generar el reporte: " + ex.Message);
             }
         }
+
 
         private void dgvResumenVentas_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
