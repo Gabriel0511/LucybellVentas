@@ -262,7 +262,16 @@ namespace FrontEnd
             FormEditarProducto formEditar = new FormEditarProducto(nombreProducto);
             formEditar.ShowDialog();
 
-            ActualizarInfoProducto();
+            if (dtpFecha.CustomFormat == "TODAS")
+            {
+                DatabaseHelper dbHelper = new DatabaseHelper();
+                DataTable ventas = dbHelper.ObtenerTodasLasVentas();
+                dgvResumenVentas.DataSource = ventas;
+            }
+            else
+            {
+                VerVentasPorFecha(dtpFecha.Value);
+            }
         }
 
         private void btnEliminar_Click_1(object sender, EventArgs e)
@@ -332,7 +341,6 @@ namespace FrontEnd
             {
                 VerVentasPorFecha(dtpFecha.Value);
             }
-
         }
 
         private void btnVerProductos_Click(object sender, EventArgs e)
