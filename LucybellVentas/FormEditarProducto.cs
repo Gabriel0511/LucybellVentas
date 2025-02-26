@@ -45,7 +45,6 @@ namespace LucybellVentas
             }
         }
 
-
         private void btnGuardarCambios_Click(object sender, EventArgs e)
         {
             try

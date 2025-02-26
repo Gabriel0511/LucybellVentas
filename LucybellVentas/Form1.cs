@@ -119,7 +119,6 @@ namespace FrontEnd
 
         #endregion
 
-
         #region Botones
 
         private void btnRegistrarVenta_Click(object sender, EventArgs e)
@@ -267,10 +266,12 @@ namespace FrontEnd
                 DatabaseHelper dbHelper = new DatabaseHelper();
                 DataTable ventas = dbHelper.ObtenerTodasLasVentas();
                 dgvResumenVentas.DataSource = ventas;
+                ActualizarInfoProducto();
             }
             else
             {
                 VerVentasPorFecha(dtpFecha.Value);
+                ActualizarInfoProducto();
             }
         }
 
@@ -381,7 +382,6 @@ namespace FrontEnd
         }
 
         #endregion
-
 
         #region Metodos
 
@@ -650,7 +650,6 @@ namespace FrontEnd
             }
         }
 
-
         private void dgvResumenVentas_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             // Verificamos que la columna editada sea la de Estado
@@ -703,7 +702,6 @@ namespace FrontEnd
             }
             dgvResumenVentas.ClearSelection();
         }
-
 
         #endregion
 
